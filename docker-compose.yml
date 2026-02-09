@@ -1,0 +1,72 @@
+version: "3.9"
+
+services:
+
+  backend:
+    build: ./backend
+    container_name: driverthru-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - minio
+    networks:
+      - driverthru_net
+
+  frontend:
+    build: ./frontend
+    container_name: driverthru-frontend
+    command: ["sh", "-c", "bun run build && sleep infinity"]
+    volumes:
+      - ./frontend/dist:/app/dist
+    networks:
+      - driverthru_net
+
+  nginx:
+    build: ./nginx
+    container_name: driverthru-nginx
+    ports:
+      - "80:80"
+      # - "443:443"
+    volumes:
+      - ./nginx/nginx_data/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/nginx_data/sites:/etc/nginx/conf.d
+      - ./frontend/dist:/usr/share/nginx/html
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+    networks:
+      - driverthru_net
+
+  db:
+    image: postgres:16-alpine
+    container_name: driverthru-db
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./postgres/data:/var/lib/postgresql/data
+    networks:
+      - driverthru_net
+
+  minio:
+    image: minio/minio
+    container_name: driverthru-minio
+    command: server /data --console-address ":9001"
+    env_file:
+      - .env
+    volumes:
+      - ./minio/data:/data
+    ports:
+      - "9001:9001"   # TODO: Retirar antes do deploy
+    networks:
+      - driverthru_net
+
+volumes:
+  postgres_data:
+
+networks:
+  driverthru_net:
+    driver: bridge
