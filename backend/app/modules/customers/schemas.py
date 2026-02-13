@@ -48,7 +48,7 @@ class NJDriverLicenseBase(BaseModel):
 
 
 class NJDriverLicenseCreate(NJDriverLicenseBase):
-    license_number_encrypted: str
+    license_number_encrypted: str | None = None
     endorsements: list[NJEndorsementCode] = Field(default_factory=list)
     restrictions: list[NJRestrictionCode] = Field(default_factory=list)
 
@@ -66,12 +66,19 @@ class NJDriverLicenseRestrictionRead(ORMModel):
 class NJDriverLicenseRead(NJDriverLicenseBase, ORMModel):
     id: int
     customer_id: int
-    license_number_encrypted: str
+    license_number_encrypted: str | None = None
     endorsements: list[NJDriverLicenseEndorsementRead] = Field(default_factory=list)
     restrictions: list[NJDriverLicenseRestrictionRead] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
     active: bool
+
+
+class NJDriverLicenseUpdate(NJDriverLicenseBase):
+    license_number_encrypted: str | None = None
+    endorsements: list[NJEndorsementCode] | None = None
+    restrictions: list[NJRestrictionCode] | None = None
+    active: bool | None = None
 
 
 class BrazilDriverLicenseBase(BaseModel):
@@ -106,6 +113,11 @@ class BrazilDriverLicenseRead(BrazilDriverLicenseBase, ORMModel):
     active: bool
 
 
+class BrazilDriverLicenseUpdate(BrazilDriverLicenseBase):
+    cpf_encrypted: str | None = None
+    active: bool | None = None
+
+
 class PassportBase(BaseModel):
     document_type: str | None = Field(default=None, max_length=50)
     issuing_country: str | None = Field(default=None, max_length=80)
@@ -135,6 +147,11 @@ class PassportRead(PassportBase, ORMModel):
     active: bool
 
 
+class PassportUpdate(PassportBase):
+    passport_number_encrypted: str | None = None
+    active: bool | None = None
+
+
 class CustomerBase(BaseModel):
     customer_photo_object_key: str | None = Field(default=None, max_length=255)
     first_name: str = Field(max_length=120)
@@ -148,9 +165,9 @@ class CustomerBase(BaseModel):
     ssn_encrypted: str | None = None
     gender: Gender | None = None
     eye_color: str | None = Field(default=None, max_length=30)
-    weight_lbs: Decimal | None = None
-    height_feet: int | None = None
-    height_inches: int | None = None
+    weight_lbs: Decimal | None = Field(default=None, gt=0)
+    height_feet: int | None = Field(default=None, ge=0, le=8)
+    height_inches: int | None = Field(default=None, ge=0, le=11)
 
 
 class CustomerCreate(CustomerBase):
@@ -173,9 +190,9 @@ class CustomerUpdate(BaseModel):
     ssn_encrypted: str | None = None
     gender: Gender | None = None
     eye_color: str | None = Field(default=None, max_length=30)
-    weight_lbs: Decimal | None = None
-    height_feet: int | None = None
-    height_inches: int | None = None
+    weight_lbs: Decimal | None = Field(default=None, gt=0)
+    height_feet: int | None = Field(default=None, ge=0, le=8)
+    height_inches: int | None = Field(default=None, ge=0, le=11)
     active: bool | None = None
 
 
@@ -188,3 +205,23 @@ class CustomerRead(CustomerBase, ORMModel):
     created_at: datetime
     updated_at: datetime
     active: bool
+
+
+class CustomerListItem(ORMModel):
+    id: int
+    first_name: str
+    middle_name: str | None = None
+    last_name: str
+    phone_number: str | None = None
+    email: EmailStr | None = None
+    date_of_birth: date
+    active: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class CustomerListResponse(BaseModel):
+    items: list[CustomerListItem]
+    total: int
+    page: int
+    size: int

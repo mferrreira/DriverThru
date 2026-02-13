@@ -36,7 +36,7 @@ class NJDriverLicense(TimestampMixin, Base):
         nullable=False,
         index=True,
     )
-    license_number_encrypted: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    license_number_encrypted: Mapped[str | None] = mapped_column(Text, unique=True)
     issue_date: Mapped[date | None] = mapped_column(Date)
     expiration_date: Mapped[date | None] = mapped_column(Date)
     license_class: Mapped[NJLicenseClass | None] = mapped_column(
@@ -88,7 +88,11 @@ class NJDriverLicenseRestriction(TimestampMixin, Base):
         index=True,
     )
     code: Mapped[NJRestrictionCode] = mapped_column(
-        Enum(NJRestrictionCode, native_enum=False),
+        Enum(
+            NJRestrictionCode,
+            native_enum=False,
+            values_callable=lambda enum_cls: [item.value for item in enum_cls],
+        ),
         nullable=False,
     )
 

@@ -14,12 +14,10 @@ from app.core.config import settings
 
 password_hasher = PasswordHasher()
 
-
 @dataclass
 class AuthUser:
     username: str
     role: str
-
 
 def create_access_token(user: AuthUser) -> str:
     now = datetime.now(UTC)
@@ -31,7 +29,6 @@ def create_access_token(user: AuthUser) -> str:
         "exp": int(expires.timestamp()),
     }
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
-
 
 def decode_access_token(token: str) -> AuthUser:
     payload = jwt.decode(
@@ -45,7 +42,6 @@ def decode_access_token(token: str) -> AuthUser:
         raise jwt.InvalidTokenError("Invalid token payload")
     return AuthUser(username=username, role=role)
 
-
 def authenticate_user(username: str, password: str) -> AuthUser | None:
     for user_record in load_auth_users():
         if user_record["username"] != username:
@@ -54,7 +50,6 @@ def authenticate_user(username: str, password: str) -> AuthUser | None:
             return None
         return AuthUser(username=user_record["username"], role=user_record["role"])
     return None
-
 
 @lru_cache(maxsize=1)
 def load_auth_users() -> list[dict[str, str]]:
@@ -79,7 +74,6 @@ def load_auth_users() -> list[dict[str, str]]:
     if not users:
         raise ValueError("AUTH_USERS_JSON does not contain valid users")
     return users
-
 
 def _verify_password(password: str, stored: str) -> bool:
     if stored.startswith("$argon2"):
