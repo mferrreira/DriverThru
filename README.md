@@ -1,107 +1,150 @@
-# DriverThru — Your Licensing Best Friend
+# DriverThru
 
-DriverThru is a custom internal web system designed to support and optimize NJMVC-related business workflows.  
-The platform centralizes customer data, automates document generation, and reduces manual and repetitive operational tasks.
+Sistema web interno (monólito modular) para operação de emissão/renovação de documentos relacionados ao fluxo NJMVC.
 
----
+## O que já está implementado
 
-## Features
+- Autenticação com JWT em cookie `HttpOnly`.
+- CRUD de clientes.
+- CRUD de documentos por cliente:
+  - NJ Driver License (com renovação e histórico)
+  - Brazil Driver License (com renovação e histórico)
+  - Passport (com renovação e histórico)
+- Geração de PDF por template:
+  - `BA-208`
+  - `affidavit`
+- Prefill de formulário a partir de dados do cliente + licença/passaporte selecionados.
+- Download de PDF gerado.
+- Listagem de PDFs já gerados (para baixar sem regenerar).
+- Dashboard com métricas + pendências reais por expiração.
+- Tracking de notificação de pendências (notificado/pendente).
 
-- Responsive web interface (desktop and mobile)
-- Customer registration and management
-- Storage of driver’s license information:
-  - Brazilian Driver’s License
-  - New Jersey Driver License
-  - Passport data
-- Automated PDF document filling using predefined templates:
-  - BA-208
-  - Affidavit
-- Automatic reminders for customer license expiration dates
-- Customer reports generation (TXT, CSV)
+## Arquitetura
 
----
+- Backend: FastAPI + SQLAlchemy + Alembic
+- Frontend: React + Vite + Tailwind
+- Infra: Docker Compose (Nginx, Backend, Frontend build, Postgres, MinIO)
+- Estilo: monólito modular (`auth`, `customers`, `documents`, `dashboard`, etc.)
 
-## Getting Started
+## Requisitos
 
-### Prerequisites
-- Docker
-- Docker Compose
+- Docker + Docker Compose
+- (Opcional) Python local para rodar backend sem Docker
+- (Opcional) Node.js/Bun para dev frontend local
 
-### Installation
+## Setup rápido (Docker)
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/mferrreira/DriverThru
-   ```
+1. Copie variáveis:
 
-2. Navigate to the project folder and start the containers:
+```bash
+cp .env.example .env
+```
 
-   ```bash
-   docker-compose up -d --build
-   ```
+2. Suba os serviços:
 
-3. Access the application in your browser:
+```bash
+docker compose up -d --build
+```
 
-   ```
-   https://localhost/
-   ```
+3. Acesse:
 
-4. Create your account and start using the system.
+- App: `http://localhost`
+- Health backend (via nginx): `http://localhost/api/health`
+- MinIO Console: `http://localhost:9001` (se porta estiver exposta)
 
----
+Observação: no container do backend já executa `alembic upgrade head` no startup.
 
-## Technologies
+## Setup local (sem Docker)
 
 ### Backend
 
-* FastAPI
-* SQLAlchemy
-* Alembic
-* PyPDF
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+alembic upgrade head
+uvicorn app.main:app --reload --port 8000
+```
 
 ### Frontend
-* ReactJS
-* React Router
-* ShadCN
-* TanStack Query
 
-### Infrastructure
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-* Docker
-* Docker Compose
-* Reverse proxy (NGINX)
+## Migrações Alembic
 
----
+### Dentro do Docker (recomendado)
 
-## Architecture
+```bash
+docker compose exec backend alembic upgrade head
+```
 
-The system follows a **modular monolith architecture**, allowing fast development and simplified deployment while maintaining clear separation of concerns between modules (authentication, customers, documents, reports).
+### No host local
 
-This approach supports future scalability and refactoring into distributed services if required.
+Se rodar no host, o `DATABASE_URL` precisa apontar para banco acessível localmente (`localhost`), não para `db` (hostname interno da rede Docker).
 
----
+## Usuários padrão
 
-## Contributing
+Configurados via `AUTH_USERS_JSON` em `backend/app/core/config.py`:
 
-1. Clone the repository
-2. Create a new branch:
+- `admin` / `admin123`
+- `operator` / `operator123`
 
-   ```bash
-   git checkout -b feature/branch-name
-   ```
-3. Commit your changes:
+Altere isso no `.env` para produção.
 
-   ```bash
-   git commit -m "Describe your changes"
-   ```
-4. Push to your branch:
+## Templates PDF
 
-   ```bash
-   git push origin feature/branch-name
-   ```
+Por padrão, os templates são lidos de `documents/`:
 
----
+- `documents/BA-208.pdf`
+- `documents/affidavit.pdf`
 
-## License
+No Docker, essa pasta é montada em `/app/documents` no backend.
 
-MIT License
+## Principais endpoints
+
+### Auth
+
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
+
+### Customers
+
+- `GET /api/customers`
+- `POST /api/customers`
+- `PATCH /api/customers/{id}`
+- `DELETE /api/customers/{id}`
+- Sub-rotas de NJ/BR/passport em `/api/customers/{id}/...`
+
+### Documents
+
+- `GET /api/documents/templates`
+- `GET /api/documents/templates/{template_key}/fields`
+- `POST /api/documents/prefill`
+- `POST /api/documents/generate`
+- `GET /api/documents/download?object_key=...`
+- `GET /api/documents/generated`
+
+### Dashboard
+
+- `GET /api/dashboard/summary`
+- `GET /api/dashboard/pending`
+- `POST /api/dashboard/pending/notify`
+
+## Troubleshooting rápido
+
+- `ModuleNotFoundError: jwt` no Alembic:
+  - já corrigido em import do módulo de dashboard; atualize branch e rode novamente.
+- `failed to resolve host 'db'` ao rodar Alembic local:
+  - rode via Docker (`docker compose exec backend ...`) ou ajuste `DATABASE_URL` para `localhost`.
+- Erros de constraint (`height_feet`, etc.):
+  - backend retorna `422`; confira payload enviado pelo front.
+
+## Estado atual
+
+Projeto em evolução contínua. OCR e melhorias de UX ainda estão no roadmap.
