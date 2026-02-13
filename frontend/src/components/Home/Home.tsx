@@ -29,10 +29,10 @@ type PendingResponse = {
 };
 
 const quickActions = [
-  { label: "Novo cliente", to: "/customers" },
-  { label: "Gerar BA-208", to: "/documents" },
-  { label: "Gerar Affidavit", to: "/documents" },
-  { label: "Exportar relatório", to: "/reports" },
+  { label: "New customer", to: "/customers" },
+  { label: "Generate BA-208", to: "/documents" },
+  { label: "Generate Affidavit", to: "/documents" },
+  { label: "Export report", to: "/reports" },
 ];
 
 export default function Home() {
@@ -75,7 +75,7 @@ export default function Home() {
         setSummary((await summaryResponse.json()) as DashboardSummary);
         setPending((await pendingResponse.json()) as PendingResponse);
       } catch {
-        setError("Não foi possível carregar os indicadores da dashboard.");
+        setError("Could not load dashboard metrics.");
       } finally {
         setLoading(false);
       }
@@ -89,7 +89,7 @@ export default function Home() {
       try {
         await loadPending();
       } catch {
-        setError("Não foi possível atualizar pendências.");
+        setError("Could not refresh pending items.");
       }
     }
     void reloadPendingByFilter();
@@ -115,7 +115,7 @@ export default function Home() {
       }
       await loadPending();
     } catch {
-      setError("Não foi possível atualizar status de notificação.");
+      setError("Could not update notification status.");
     } finally {
       setUpdatingKey(null);
     }
@@ -129,28 +129,28 @@ export default function Home() {
           ? "NJ DL"
           : "Brazil DL";
     if (item.days_until_expiration < 0) {
-      return `${label} vencido há ${Math.abs(item.days_until_expiration)} dias`;
+      return `${label} expired ${Math.abs(item.days_until_expiration)} days`;
     }
     if (item.days_until_expiration === 0) {
-      return `${label} vence hoje`;
+      return `${label} expires today`;
     }
-    return `${label} vence em ${item.days_until_expiration} dias`;
+    return `${label} expires in ${item.days_until_expiration} days`;
   }
 
   const metrics = [
-    { label: "Clientes cadastrados", value: summary?.customers_total ?? 0, tone: "text-zinc-900" },
-    { label: "Docs gerados hoje", value: summary?.documents_generated_today ?? 0, tone: "text-zinc-900" },
-    { label: "Vencendo em 30 dias", value: summary?.expiring_in_30_days ?? 0, tone: "text-amber-700" },
-    { label: "Vencendo hoje", value: summary?.expiring_today ?? 0, tone: "text-red-700" },
+    { label: "Registered customers", value: summary?.customers_total ?? 0, tone: "text-zinc-900" },
+    { label: "Docs generated today", value: summary?.documents_generated_today ?? 0, tone: "text-zinc-900" },
+    { label: "Expiring in 30 days", value: summary?.expiring_in_30_days ?? 0, tone: "text-amber-700" },
+    { label: "Expiring today", value: summary?.expiring_today ?? 0, tone: "text-red-700" },
   ];
 
   return (
     <div className="space-y-6">
       <section className="overflow-hidden rounded-xl border border-zinc-200 bg-linear-to-r from-zinc-900 to-zinc-700 p-6 text-white">
         <p className="text-xs uppercase tracking-[0.2em] text-zinc-300">Operations Dashboard</p>
-        <h1 className="mt-2 text-2xl font-semibold md:text-3xl">Visão geral da operação NJMVC</h1>
+        <h1 className="mt-2 text-2xl font-semibold md:text-3xl">NJMVC operations overview</h1>
         <p className="mt-2 max-w-2xl text-sm text-zinc-200">
-          Monitore clientes, pendências de vencimento e geração de documentos em um único painel.
+          Monitor customers, expiration tasks, and document generation in one dashboard.
         </p>
       </section>
 
@@ -171,8 +171,8 @@ export default function Home() {
 
       <section className="grid gap-4 lg:grid-cols-5">
         <article className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm lg:col-span-2">
-          <h2 className="text-lg font-semibold text-zinc-900">Ações rápidas</h2>
-          <p className="mt-1 text-sm text-zinc-500">Atalhos para as tarefas mais usadas no dia a dia.</p>
+          <h2 className="text-lg font-semibold text-zinc-900">Quick actions</h2>
+          <p className="mt-1 text-sm text-zinc-500">Shortcuts for the most common daily tasks.</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
             {quickActions.map((action) => (
               <Link
@@ -187,23 +187,23 @@ export default function Home() {
         </article>
 
         <article className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm lg:col-span-3">
-          <h2 className="text-lg font-semibold text-zinc-900">Pendências prioritárias</h2>
+          <h2 className="text-lg font-semibold text-zinc-900">Priority pending items</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            Documentos próximos do vencimento ou já vencidos. Pendentes: {pending?.pending_count ?? 0} | Notificados:{" "}
+            Documents near expiration or already expired. Pending: {pending?.pending_count ?? 0} | Notified:{" "}
             {pending?.notified_count ?? 0}
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <label className="text-xs text-zinc-600">
-              Janela
+              Window
               <select
                 value={daysAhead}
                 onChange={(event) => setDaysAhead(Number(event.target.value))}
                 className="ml-2 rounded-md border border-zinc-300 px-2 py-1 text-xs"
               >
-                <option value={7}>7 dias</option>
-                <option value={30}>30 dias</option>
-                <option value={60}>60 dias</option>
-                <option value={90}>90 dias</option>
+                <option value={7}>7 days</option>
+                <option value={30}>30 days</option>
+                <option value={60}>60 days</option>
+                <option value={90}>90 days</option>
               </select>
             </label>
             <label className="text-xs text-zinc-600">
@@ -213,7 +213,7 @@ export default function Home() {
                 onChange={(event) => setIncludeNotified(event.target.checked)}
                 className="mr-2"
               />
-              Incluir notificados
+              Include notified
             </label>
           </div>
 
@@ -239,10 +239,10 @@ export default function Home() {
                       ].join(" ")}
                     >
                       {updatingKey === key
-                        ? "Atualizando..."
+                        ? "Updating..."
                         : item.notified
-                          ? "Marcar pendente"
-                          : "Marcar notificado"}
+                          ? "Mark as pending"
+                          : "Mark as notified"}
                     </button>
                   </div>
                 </li>
@@ -250,7 +250,7 @@ export default function Home() {
             })}
             {!loading && (pending?.items.length ?? 0) === 0 ? (
               <li className="rounded-lg border border-zinc-200 px-4 py-3 text-sm text-zinc-600">
-                Nenhuma pendência encontrada para os próximos {daysAhead} dias.
+                No pending items found for the next {daysAhead} days.
               </li>
             ) : null}
           </ul>

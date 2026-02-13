@@ -1,107 +1,150 @@
-# DriverThru — Your Licensing Best Friend
+# DriverThru
 
-DriverThru is a custom internal web system designed to support and optimize NJMVC-related business workflows.  
-The platform centralizes customer data, automates document generation, and reduces manual and repetitive operational tasks.
+Internal web platform (modular monolith) for NJMVC-related licensing and document workflows.
 
----
+## Implemented Features
 
-## Features
-
-- Responsive web interface (desktop and mobile)
-- Customer registration and management
-- Storage of driver’s license information:
-  - Brazilian Driver’s License
-  - New Jersey Driver License
-  - Passport data
-- Automated PDF document filling using predefined templates:
-  - BA-208
-  - Affidavit
-- Automatic reminders for customer license expiration dates
-- Customer reports generation (TXT, CSV)
-
----
-
-## Getting Started
-
-### Prerequisites
-- Docker
-- Docker Compose
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/mferrreira/DriverThru
-   ```
-
-2. Navigate to the project folder and start the containers:
-
-   ```bash
-   docker-compose up -d --build
-   ```
-
-3. Access the application in your browser:
-
-   ```
-   https://localhost/
-   ```
-
-4. Create your account and start using the system.
-
----
-
-## Technologies
-
-### Backend
-
-* FastAPI
-* SQLAlchemy
-* Alembic
-* PyPDF
-
-### Frontend
-* ReactJS
-* React Router
-* ShadCN
-* TanStack Query
-
-### Infrastructure
-
-* Docker
-* Docker Compose
-* Reverse proxy (NGINX)
-
----
+- JWT authentication using an `HttpOnly` cookie.
+- Customer CRUD.
+- Customer document CRUD:
+  - NJ Driver License (renewal + history)
+  - Brazil Driver License (renewal + history)
+  - Passport (renewal + history)
+- PDF generation from templates:
+  - `BA-208`
+  - `affidavit`
+- Form prefill from customer data + selected license/passport.
+- Generated PDF download.
+- Generated PDF listing (download without regenerating).
+- Dashboard metrics + real expiration-based pending items.
+- Notification tracking for pending items (notified/pending).
 
 ## Architecture
 
-The system follows a **modular monolith architecture**, allowing fast development and simplified deployment while maintaining clear separation of concerns between modules (authentication, customers, documents, reports).
+- Backend: FastAPI + SQLAlchemy + Alembic
+- Frontend: React + Vite + Tailwind
+- Infra: Docker Compose (Nginx, Backend, Frontend build, Postgres, MinIO)
+- Pattern: modular monolith (`auth`, `customers`, `documents`, `dashboard`, etc.)
 
-This approach supports future scalability and refactoring into distributed services if required.
+## Requirements
 
----
+- Docker + Docker Compose
+- (Optional) Local Python for backend development without Docker
+- (Optional) Node.js/Bun for local frontend development
 
-## Contributing
+## Quick Setup (Docker)
 
-1. Clone the repository
-2. Create a new branch:
+1. Copy environment variables:
 
-   ```bash
-   git checkout -b feature/branch-name
-   ```
-3. Commit your changes:
+```bash
+cp .env.example .env
+```
 
-   ```bash
-   git commit -m "Describe your changes"
-   ```
-4. Push to your branch:
+2. Start services:
 
-   ```bash
-   git push origin feature/branch-name
-   ```
+```bash
+docker compose up -d --build
+```
 
----
+3. Access:
 
-## License
+- App: `http://localhost`
+- Backend health (via nginx): `http://localhost/api/health`
+- MinIO Console: `http://localhost:9001` (if exposed)
 
-MIT License
+Note: the backend container runs `alembic upgrade head` on startup.
+
+## Local Setup (without Docker)
+
+### Backend
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+alembic upgrade head
+uvicorn app.main:app --reload --port 8000
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## Alembic Migrations
+
+### Inside Docker (recommended)
+
+```bash
+docker compose exec backend alembic upgrade head
+```
+
+### Local host
+
+When running on host, `DATABASE_URL` must point to a locally reachable DB (`localhost`), not `db` (Docker internal hostname).
+
+## Default Users
+
+Configured via `AUTH_USERS_JSON` in `backend/app/core/config.py`:
+
+- `admin` / `admin123`
+- `operator` / `operator123`
+
+Change this in `.env` for production.
+
+## PDF Templates
+
+By default, templates are loaded from `documents/`:
+
+- `documents/BA-208.pdf`
+- `documents/affidavit.pdf`
+
+In Docker, this folder is mounted to `/app/documents` in backend.
+
+## Main Endpoints
+
+### Auth
+
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
+
+### Customers
+
+- `GET /api/customers`
+- `POST /api/customers`
+- `PATCH /api/customers/{id}`
+- `DELETE /api/customers/{id}`
+- NJ/BR/passport subroutes under `/api/customers/{id}/...`
+
+### Documents
+
+- `GET /api/documents/templates`
+- `GET /api/documents/templates/{template_key}/fields`
+- `POST /api/documents/prefill`
+- `POST /api/documents/generate`
+- `GET /api/documents/download?object_key=...`
+- `GET /api/documents/generated`
+
+### Dashboard
+
+- `GET /api/dashboard/summary`
+- `GET /api/dashboard/pending`
+- `POST /api/dashboard/pending/notify`
+
+## Quick Troubleshooting
+
+- `ModuleNotFoundError: jwt` in Alembic:
+  - fixed by dashboard module import changes; update your branch and rerun.
+- `failed to resolve host 'db'` when running Alembic locally:
+  - run via Docker (`docker compose exec backend ...`) or update `DATABASE_URL` to `localhost`.
+- Constraint errors (`height_feet`, etc.):
+  - backend returns `422`; check the payload sent by frontend.
+
+## Current Status
+
+Project is under active development. OCR and UX improvements are still on the roadmap.

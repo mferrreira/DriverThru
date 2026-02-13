@@ -21,7 +21,7 @@ export default function CollapsibleSection({
             <p className="text-sm font-semibold text-zinc-800">{title}</p>
             {subtitle ? <p className="text-xs text-zinc-500">{subtitle}</p> : null}
           </div>
-          <span className="text-xs text-zinc-500">Abrir/fechar</span>
+          <span className="text-xs text-zinc-500">Expand/collapse</span>
         </div>
       </summary>
       <div className="mt-3">{children}</div>

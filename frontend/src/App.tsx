@@ -12,7 +12,7 @@ function ProtectedLayout() {
   const { loading, user } = useAuth();
 
   if (loading) {
-    return <div className="p-6">Carregando...</div>;
+    return <div className="p-6">Loading...</div>;
   }
   if (!user) {
     return <Navigate to="/login" replace />;

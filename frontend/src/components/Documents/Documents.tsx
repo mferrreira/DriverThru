@@ -143,7 +143,7 @@ export default function Documents() {
           setTemplateKey(templatesData[0].key);
         }
       } catch {
-        setError("Não foi possível carregar clientes/templates.");
+        setError("Could not load customers/templates.");
       } finally {
         setLoading(false);
       }
@@ -188,7 +188,7 @@ export default function Documents() {
 
         setSelectedPassportId(preferredPassport ? String(preferredPassport.id) : "");
       } catch {
-        setError("Não foi possível carregar licenses/passaporte do customer.");
+        setError("Could not load customer licenses/passport.");
       } finally {
         setLoadingCustomerContext(false);
       }
@@ -223,7 +223,7 @@ export default function Documents() {
           return next;
         });
       } catch {
-        setError("Não foi possível carregar os campos do template.");
+        setError("Could not load template fields.");
       } finally {
         setLoadingFields(false);
       }
@@ -286,7 +286,7 @@ export default function Documents() {
       const data = (await response.json()) as PrefillDocumentResponse;
       setFieldOverrides(data.prefilled_fields);
     } catch {
-      setError("Não foi possível pré-preencher os campos.");
+      setError("Could not prefill fields.");
     } finally {
       setPrefilling(false);
     }
@@ -341,7 +341,7 @@ export default function Documents() {
   async function onGenerate(event: FormEvent) {
     event.preventDefault();
     if (!customerId || !templateKey) {
-      setError("Selecione cliente e template.");
+      setError("Select a customer and template.");
       return;
     }
     setGenerating(true);
@@ -366,7 +366,7 @@ export default function Documents() {
       setResult(data);
       await loadGeneratedDocuments();
     } catch {
-      setError("Falha ao gerar documento.");
+      setError("Failed to generate document.");
     } finally {
       setGenerating(false);
     }
@@ -396,7 +396,7 @@ export default function Documents() {
       anchor.remove();
       URL.revokeObjectURL(url);
     } catch {
-      setError("Falha ao baixar o documento.");
+      setError("Failed to download document.");
     } finally {
       setDownloading(false);
     }
@@ -414,7 +414,7 @@ export default function Documents() {
     <div className="space-y-4">
       <header>
         <h1 className="text-2xl font-semibold text-zinc-900">Documents</h1>
-        <p className="text-sm text-zinc-500">Geração de BA-208 e Affidavit com dados do customer + overrides.</p>
+        <p className="text-sm text-zinc-500">Generate BA-208 and Affidavit using customer data plus overrides.</p>
       </header>
 
       <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
@@ -457,7 +457,7 @@ export default function Documents() {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-sm">
-              Tipo de license
+              License type
               <select
                 disabled={loadingCustomerContext || !customerContext}
                 value={licenseType}
@@ -468,27 +468,27 @@ export default function Documents() {
                 }}
                 className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
               >
-                <option value="none">Sem seleção</option>
+                <option value="none">No selection</option>
                 <option value="nj">NJ Driver License</option>
                 <option value="br">Brazil Driver License</option>
               </select>
             </label>
 
             <label className="text-sm">
-              License selecionada
+              Selected license
               <select
                 disabled={loadingCustomerContext || licenseType === "none"}
                 value={selectedLicenseId}
                 onChange={(event) => setSelectedLicenseId(event.target.value)}
                 className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
               >
-                <option value="">Selecionar</option>
+                <option value="">Select</option>
                 {licenseType === "nj"
                   ? (customerContext?.nj_driver_licenses ?? [])
                       .filter((item) => item.active)
                       .map((item) => (
                         <option key={item.id} value={item.id}>
-                          #{item.id} | {item.license_number_encrypted || "Sem número"} {item.is_current ? "(current)" : ""}
+                          #{item.id} | {item.license_number_encrypted || "No number"} {item.is_current ? "(current)" : ""}
                         </option>
                       ))
                   : null}
@@ -497,7 +497,7 @@ export default function Documents() {
                       .filter((item) => item.active)
                       .map((item) => (
                         <option key={item.id} value={item.id}>
-                          #{item.id} | {item.registry_number || "Sem registro"} {item.is_current ? "(current)" : ""}
+                          #{item.id} | {item.registry_number || "No registry"} {item.is_current ? "(current)" : ""}
                         </option>
                       ))
                   : null}
@@ -505,14 +505,14 @@ export default function Documents() {
             </label>
 
             <label className="text-sm sm:col-span-2">
-              Passaporte (opcional)
+              Passport (optional)
               <select
                 disabled={loadingCustomerContext}
                 value={selectedPassportId}
                 onChange={(event) => setSelectedPassportId(event.target.value)}
                 className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
               >
-                <option value="">Sem seleção</option>
+                <option value="">No selection</option>
                 {(customerContext?.passports ?? [])
                   .filter((item) => item.active)
                   .map((item) => (
@@ -526,7 +526,7 @@ export default function Documents() {
 
           {templateKey === "ba208" ? (
             <details className="rounded-lg border border-zinc-200 p-3" open>
-              <summary className="cursor-pointer text-sm font-semibold text-zinc-800">BA-208 overrides guiados</summary>
+              <summary className="cursor-pointer text-sm font-semibold text-zinc-800">BA-208 guided overrides</summary>
               <div className="mt-3 space-y-4">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="text-xs">
@@ -665,7 +665,7 @@ export default function Documents() {
                 </fieldset>
 
                 <fieldset className="rounded-md border border-zinc-200 p-3">
-                  <legend className="px-1 text-xs font-semibold text-zinc-700">Select All That Apply (múltiplos)</legend>
+                  <legend className="px-1 text-xs font-semibold text-zinc-700">Select All That Apply (multiple)</legend>
                   <div className="mt-2 grid gap-2 sm:grid-cols-2 text-sm">
                     {ba208SelectAllOptions.map((option) => (
                       <label key={option.key}>
@@ -719,12 +719,12 @@ export default function Documents() {
 
                 <details className="rounded-md border border-zinc-200 p-3">
                   <summary className="cursor-pointer text-xs font-semibold text-zinc-700">
-                    Ajustes avançados (campos raw do PDF)
+                    Advanced overrides (raw PDF fields)
                   </summary>
                   <div className="mt-3 grid max-h-80 gap-3 overflow-auto pr-1 sm:grid-cols-2">
-                    {loadingFields ? <p className="text-sm text-zinc-500">Carregando campos...</p> : null}
+                    {loadingFields ? <p className="text-sm text-zinc-500">Loading fields...</p> : null}
                     {!loadingFields && templateFields.length === 0 ? (
-                      <p className="text-sm text-zinc-500">Template sem campos detectados.</p>
+                      <p className="text-sm text-zinc-500">No template fields detected.</p>
                     ) : null}
                     {templateFields.map((fieldName) => (
                       <label key={fieldName} className="text-xs">
@@ -746,9 +746,9 @@ export default function Documents() {
                 Field overrides ({templateFields.length} campos)
               </summary>
               <div className="mt-3 grid max-h-80 gap-3 overflow-auto pr-1 sm:grid-cols-2">
-                {loadingFields ? <p className="text-sm text-zinc-500">Carregando campos...</p> : null}
+                {loadingFields ? <p className="text-sm text-zinc-500">Loading fields...</p> : null}
                 {!loadingFields && templateFields.length === 0 ? (
-                  <p className="text-sm text-zinc-500">Template sem campos detectados.</p>
+                  <p className="text-sm text-zinc-500">No template fields detected.</p>
                 ) : null}
                 {templateFields.map((fieldName) => (
                   <label key={fieldName} className="text-xs">
@@ -773,14 +773,14 @@ export default function Documents() {
               onClick={() => void applyPrefill()}
               className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
             >
-              {prefilling ? "Pré-preenchendo..." : "Reaplicar pré-preenchimento"}
+              {prefilling ? "Prefilling..." : "Reapply prefill"}
             </button>
             <button
               type="submit"
               disabled={generating || !customerId || !templateKey}
               className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-60"
             >
-              {generating ? "Gerando..." : "Gerar documento"}
+              {generating ? "Generating..." : "Generate document"}
             </button>
 
             <button
@@ -789,7 +789,7 @@ export default function Documents() {
               onClick={() => void onDownload()}
               className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
             >
-              {downloading ? "Baixando..." : "Baixar PDF"}
+              {downloading ? "Downloading..." : "Download PDF"}
             </button>
           </div>
         </form>
@@ -797,19 +797,19 @@ export default function Documents() {
 
       {result ? (
         <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-zinc-900">Resultado</h2>
+          <h2 className="text-lg font-semibold text-zinc-900">Result</h2>
           <div className="mt-2 space-y-1 text-sm text-zinc-700">
             <p>
               <span className="font-medium">Template:</span> {result.template_key}
             </p>
             <p>
-              <span className="font-medium">Objeto:</span> {result.object_key}
+              <span className="font-medium">Object:</span> {result.object_key}
             </p>
             <p>
-              <span className="font-medium">Campos preenchidos:</span> {matchedInfo}
+              <span className="font-medium">Matched fields:</span> {matchedInfo}
             </p>
             <p>
-              <span className="font-medium">Gerado em:</span> {new Date(result.generated_at).toLocaleString()}
+              <span className="font-medium">Generated at:</span> {new Date(result.generated_at).toLocaleString()}
             </p>
           </div>
         </section>
@@ -817,42 +817,42 @@ export default function Documents() {
 
       <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-zinc-900">PDFs já gerados</h2>
+          <h2 className="text-lg font-semibold text-zinc-900">Previously generated PDFs</h2>
           <button
             type="button"
             onClick={() => void loadGeneratedDocuments()}
             className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
           >
-            Atualizar
+            Refresh
           </button>
         </div>
         <p className="mt-1 text-sm text-zinc-500">
-          Lista filtrada por customer/template selecionados. Baixe sem precisar gerar de novo.
+          Filtered by selected customer/template. Download without regenerating.
         </p>
 
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="border-b border-zinc-200 text-left text-zinc-600">
-                <th className="px-2 py-2 font-medium">Arquivo</th>
+                <th className="px-2 py-2 font-medium">File</th>
                 <th className="px-2 py-2 font-medium">Customer</th>
                 <th className="px-2 py-2 font-medium">Template</th>
-                <th className="px-2 py-2 font-medium">Gerado em</th>
-                <th className="px-2 py-2 font-medium">Ações</th>
+                <th className="px-2 py-2 font-medium">Generated at</th>
+                <th className="px-2 py-2 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loadingGenerated ? (
                 <tr>
                   <td className="px-2 py-3 text-zinc-500" colSpan={5}>
-                    Carregando documentos...
+                    Loading documents...
                   </td>
                 </tr>
               ) : null}
               {!loadingGenerated && generatedItems.length === 0 ? (
                 <tr>
                   <td className="px-2 py-3 text-zinc-500" colSpan={5}>
-                    Nenhum PDF encontrado para o filtro atual.
+                    No PDFs found for the current filter.
                   </td>
                 </tr>
               ) : null}
@@ -872,7 +872,7 @@ export default function Documents() {
                           onClick={() => void downloadByObjectKey(item.object_key, item.file_name)}
                           className="rounded-md border border-zinc-300 px-3 py-1 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
                         >
-                          Baixar
+                          Download
                         </button>
                       </td>
                     </tr>

@@ -33,7 +33,7 @@ export default function CustomersSidebar({
           className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
           onClick={onCreateClick}
         >
-          Novo
+          New
         </button>
       </div>
 
@@ -41,7 +41,7 @@ export default function CustomersSidebar({
         <input
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Buscar nome/email/telefone"
+          placeholder="Search name/email/phone"
           className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
         />
         <button
@@ -49,15 +49,15 @@ export default function CustomersSidebar({
           onClick={onSearchSubmit}
           className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
         >
-          Buscar
+          Search
         </button>
       </div>
 
       {listError ? <p className="mt-3 text-sm text-red-600">{listError}</p> : null}
 
       <div className="mt-4 max-h-[70vh] space-y-2 overflow-auto pr-1">
-        {loadingList ? <p className="text-sm text-zinc-500">Carregando...</p> : null}
-        {!loadingList && customers.length === 0 ? <p className="text-sm text-zinc-500">Nenhum cliente.</p> : null}
+        {loadingList ? <p className="text-sm text-zinc-500">Loading...</p> : null}
+        {!loadingList && customers.length === 0 ? <p className="text-sm text-zinc-500">No customers found.</p> : null}
         {customers.map((item) => (
           <button
             key={item.id}
@@ -70,7 +70,7 @@ export default function CustomersSidebar({
           >
             <p className="text-sm font-semibold">{fullName(item)}</p>
             <p className={selectedCustomerId === item.id ? "text-xs text-zinc-200" : "text-xs text-zinc-500"}>
-              {item.email || item.phone_number || "Sem contato"}
+              {item.email || item.phone_number || "No contact info"}
             </p>
           </button>
         ))}
