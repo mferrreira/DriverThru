@@ -2,6 +2,15 @@
 .env
 .venv/
 __pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
 
 # frontend
 logs
@@ -12,6 +21,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 node_modules
+frontend/node_modules/
 dist
 dist-ssr
 *.local
@@ -31,3 +41,4 @@ minio/data/
 dist/
 
 # Infra
+documents/*.pdf

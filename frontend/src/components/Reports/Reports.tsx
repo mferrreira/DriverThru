@@ -1,7 +1,14 @@
 export default function Reports() {
-    return (
-        <div>
-            <h1>Reports</h1>
-        </div>
-    )
+  return (
+    <div className="space-y-4">
+      <header>
+        <h1 className="text-2xl font-semibold text-zinc-900">Reports</h1>
+        <p className="text-sm text-zinc-500">Consolidação e exportação CSV/TXT dos clientes cadastrados.</p>
+      </header>
+
+      <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+        <p className="text-sm text-zinc-700">Área reservada para filtros e exportadores por período e vencimento.</p>
+      </section>
+    </div>
+  );
 }

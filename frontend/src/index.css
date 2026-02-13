@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -119,6 +120,11 @@
     @apply border-border outline-ring/50;
   }
   body {
+    font-family: "Manrope", sans-serif;
     @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(circle at 5% 5%, rgba(24, 24, 27, 0.06) 0, transparent 28%),
+      radial-gradient(circle at 95% 90%, rgba(24, 24, 27, 0.05) 0, transparent 26%);
+    background-attachment: fixed;
   }
 }

@@ -1,22 +1,35 @@
-version: "3.9"
-
 services:
 
   backend:
     build: ./backend
     container_name: driverthru-backend
     restart: unless-stopped
+    command: ["sh", "-c", "alembic -c alembic.ini upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+    environment:
+      PYTHONUNBUFFERED: "1"
+      DOCUMENTS_DIR: /app/documents
     env_file:
       - .env
+    volumes:
+      - ./documents:/app/documents:ro
     depends_on:
-      - db
-      - minio
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     networks:
       - driverthru_net
 
   frontend:
     build: ./frontend
     container_name: driverthru-frontend
+    restart: unless-stopped
     command: ["sh", "-c", "bun run build && sleep infinity"]
     volumes:
       - ./frontend/dist:/app/dist
@@ -48,6 +61,12 @@ services:
       - .env
     volumes:
       - ./postgres/data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - driverthru_net
 
@@ -63,9 +82,6 @@ services:
       - "9001:9001"   # TODO: Retirar antes do deploy
     networks:
       - driverthru_net
-
-volumes:
-  postgres_data:
 
 networks:
   driverthru_net:
