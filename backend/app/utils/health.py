@@ -1,9 +1,9 @@
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
-from minio import Minio
-import os
 
+from app.core.config import settings
 from app.core.database import engine
+from app.deps.minio.minio_client import get_minio_client
 
 def check_database():
     try:
@@ -16,13 +16,7 @@ def check_database():
 
 def check_minio():
     try:
-        client = Minio(
-            os.getenv("MINIO_ENDPOINT").replace("http://", "").replace("https://", ""),
-            access_key=os.getenv("MINIO_ROOT_USER"),
-            secret_key=os.getenv("MINIO_ROOT_PASSWORD"),
-            secure=os.getenv("MINIO_ENDPOINT", "").startswith("https"),
-        )
-        client.bucket_exists(os.getenv("MINIO_BUCKET"))
-        return True
+        client = get_minio_client()
+        return client.bucket_exists(settings.MINIO_BUCKET)
     except Exception:
         return False
