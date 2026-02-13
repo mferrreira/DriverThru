@@ -86,7 +86,7 @@ export default function Customers() {
         setCustomerForm(defaultCustomerForm());
       }
     } catch {
-      setListError("Não foi possível carregar os clientes.");
+      setListError("Could not load customers.");
     } finally {
       setLoadingList(false);
     }
@@ -133,7 +133,7 @@ export default function Customers() {
       setPassportForm(defaultPassportForm());
       setEditingPassportId(null);
     } catch {
-      setCustomerError("Não foi possível carregar o detalhe do cliente.");
+      setCustomerError("Could not load customer details.");
     }
   }
 
@@ -167,11 +167,11 @@ export default function Customers() {
       }
 
       if (!entry.value.street.trim() || !entry.value.city.trim() || !entry.value.state.trim() || !entry.value.zip_code.trim()) {
-        throw new Error(`Endereço ${entry.type} incompleto. Informe street/city/state/zip.`);
+        throw new Error(`Address ${entry.type} is incomplete. Provide street/city/state/zip.`);
       }
       const normalizedState = entry.value.state.trim().toUpperCase();
       if (normalizedState.length !== 2) {
-        throw new Error(`Endereço ${entry.type}: state deve ter 2 caracteres (ex: NJ).`);
+        throw new Error(`Address ${entry.type}: state must be 2 characters (e.g. NJ).`);
       }
 
       output.push({
@@ -198,10 +198,10 @@ export default function Customers() {
       const heightFeet = customerForm.height_feet ? Number(customerForm.height_feet) : null;
       const heightInches = customerForm.height_inches ? Number(customerForm.height_inches) : null;
       if (heightFeet !== null && (heightFeet < 0 || heightFeet > 8)) {
-        throw new Error("Height (feet) deve estar entre 0 e 8.");
+        throw new Error("Height (feet) must be between 0 and 8.");
       }
       if (heightInches !== null && (heightInches < 0 || heightInches > 11)) {
-        throw new Error("Height (inches) deve estar entre 0 e 11.");
+        throw new Error("Height (inches) must be between 0 and 11.");
       }
       const payload = {
         customer_photo_object_key: normalizeString(customerForm.customer_photo_object_key),
@@ -250,7 +250,7 @@ export default function Customers() {
       await loadCustomers();
       await handleSelectCustomer(saved.id);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Falha ao salvar cliente.";
+      const message = error instanceof Error ? error.message : "Failed to save customer.";
       setCustomerError(message);
     } finally {
       setSavingCustomer(false);
@@ -258,14 +258,14 @@ export default function Customers() {
   }
 
   async function deactivateCustomer(customerId: number) {
-    const ok = window.confirm("Desativar este cliente?");
+    const ok = window.confirm("Deactivate this customer?");
     if (!ok) {
       return;
     }
 
     const response = await apiFetch(`/customers/${customerId}`, { method: "DELETE" });
     if (!response.ok) {
-      setCustomerError("Não foi possível desativar o cliente.");
+      setCustomerError("Could not deactivate customer.");
       return;
     }
     setSelectedCustomer(null);
@@ -290,7 +290,7 @@ export default function Customers() {
   async function submitNj(event: FormEvent) {
     event.preventDefault();
     if (!selectedCustomerId) {
-      setNjError("Selecione um cliente antes.");
+      setNjError("Select a customer first.");
       return;
     }
     setSavingNj(true);
@@ -323,7 +323,7 @@ export default function Customers() {
       setNjForm(defaultNJForm());
       await handleSelectCustomer(selectedCustomerId);
     } catch {
-      setNjError("Não foi possível salvar a NJ license.");
+      setNjError("Could not save NJ license.");
     } finally {
       setSavingNj(false);
     }
@@ -333,7 +333,7 @@ export default function Customers() {
     if (!selectedCustomerId) {
       return;
     }
-    const ok = window.confirm("Desativar esta NJ license?");
+    const ok = window.confirm("Deactivate this NJ license?");
     if (!ok) {
       return;
     }
@@ -341,7 +341,7 @@ export default function Customers() {
       method: "DELETE",
     });
     if (!response.ok) {
-      setNjError("Falha ao desativar NJ license.");
+      setNjError("Failed to deactivate NJ license.");
       return;
     }
     await handleSelectCustomer(selectedCustomerId);
@@ -350,7 +350,7 @@ export default function Customers() {
   async function submitBrazil(event: FormEvent) {
     event.preventDefault();
     if (!selectedCustomerId) {
-      setBrError("Selecione um cliente antes.");
+      setBrError("Select a customer first.");
       return;
     }
     setSavingBr(true);
@@ -392,7 +392,7 @@ export default function Customers() {
       setBrForm(defaultBrazilForm());
       await handleSelectCustomer(selectedCustomerId);
     } catch {
-      setBrError("Não foi possível salvar a CNH Brasil.");
+      setBrError("Could not save Brazil license.");
     } finally {
       setSavingBr(false);
     }
@@ -424,7 +424,7 @@ export default function Customers() {
     if (!selectedCustomerId) {
       return;
     }
-    const ok = window.confirm("Desativar esta CNH Brasil?");
+    const ok = window.confirm("Deactivate this Brazil license?");
     if (!ok) {
       return;
     }
@@ -432,7 +432,7 @@ export default function Customers() {
       method: "DELETE",
     });
     if (!response.ok) {
-      setBrError("Falha ao desativar CNH Brasil.");
+      setBrError("Failed to deactivate Brazil license.");
       return;
     }
     await handleSelectCustomer(selectedCustomerId);
@@ -460,7 +460,7 @@ export default function Customers() {
   async function submitPassport(event: FormEvent) {
     event.preventDefault();
     if (!selectedCustomerId) {
-      setPassportError("Selecione um cliente antes.");
+      setPassportError("Select a customer first.");
       return;
     }
     setSavingPassport(true);
@@ -499,7 +499,7 @@ export default function Customers() {
       setPassportForm(defaultPassportForm());
       await handleSelectCustomer(selectedCustomerId);
     } catch {
-      setPassportError("Não foi possível salvar o passaporte.");
+      setPassportError("Could not save passport.");
     } finally {
       setSavingPassport(false);
     }
@@ -509,7 +509,7 @@ export default function Customers() {
     if (!selectedCustomerId) {
       return;
     }
-    const ok = window.confirm("Desativar este passaporte?");
+    const ok = window.confirm("Deactivate this passport?");
     if (!ok) {
       return;
     }
@@ -517,7 +517,7 @@ export default function Customers() {
       method: "DELETE",
     });
     if (!response.ok) {
-      setPassportError("Falha ao desativar passaporte.");
+      setPassportError("Failed to deactivate passport.");
       return;
     }
     await handleSelectCustomer(selectedCustomerId);
@@ -559,7 +559,7 @@ export default function Customers() {
         <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-zinc-900">
-              {customerMode === "create" ? "Novo customer" : `Editar customer: ${selectedCustomerName}`}
+              {customerMode === "create" ? "New customer" : `Edit customer: ${selectedCustomerName}`}
             </h2>
             {selectedCustomerId ? (
               <button
@@ -567,13 +567,13 @@ export default function Customers() {
                 onClick={() => void deactivateCustomer(selectedCustomerId)}
                 className="rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
               >
-                Desativar
+                Deactivate
               </button>
             ) : null}
           </div>
           <CollapsibleSection
-            title="Dados do customer"
-            subtitle="Abra para preencher/editar os dados principais e endereços"
+            title="Customer data"
+            subtitle="Expand to create/edit core customer data and addresses"
             defaultOpen
           >
             <form onSubmit={(event) => void submitCustomer(event)} className="space-y-4">
@@ -715,7 +715,7 @@ export default function Customers() {
                   onChange={(event) => setCustomerForm((prev) => ({ ...prev, has_no_ssn: event.target.checked }))}
                   className="mr-2"
                 />
-                Customer sem SSN
+                Customer has no SSN
               </label>
               <label className="text-sm">
                 SSN
@@ -732,7 +732,7 @@ export default function Customers() {
               const labelMap: Record<AddressType, string> = {
                 residential: "Residential address",
                 mailing: "Mailing address",
-                out_of_state: "Out of state address",
+                out_of_state: "Out-of-state address",
               };
               const address = customerForm[addressType];
               return (
@@ -828,7 +828,7 @@ export default function Customers() {
               disabled={savingCustomer}
               className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-60"
             >
-              {savingCustomer ? "Salvando..." : customerMode === "create" ? "Criar customer" : "Salvar alterações"}
+              {savingCustomer ? "Saving..." : customerMode === "create" ? "Create customer" : "Save changes"}
             </button>
             </form>
           </CollapsibleSection>
@@ -836,7 +836,7 @@ export default function Customers() {
 
         <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
           <h3 className="text-lg font-semibold text-zinc-900">NJ Driver Licenses</h3>
-          <p className="mt-1 text-sm text-zinc-500">Classe, endorsements e restrictions com histórico de renovação.</p>
+          <p className="mt-1 text-sm text-zinc-500">Class, endorsements, and restrictions with renewal history.</p>
           {selectedCustomer ? (
             <div className="mt-4 space-y-2">
               {selectedCustomer.nj_driver_licenses.map((item) => (
@@ -844,7 +844,7 @@ export default function Customers() {
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="text-sm text-zinc-700">
                       <p className="font-semibold">
-                        #{item.id} | {item.license_number_encrypted || "Sem número"} | Class {item.license_class || "-"}
+                        #{item.id} | {item.license_number_encrypted || "No number"} | Class {item.license_class || "-"}
                       </p>
                       <p>Current: {item.is_current ? "yes" : "no"} | Active: {item.active ? "yes" : "no"}</p>
                     </div>
@@ -877,21 +877,21 @@ export default function Customers() {
                         onClick={() => void deactivateNj(item.id)}
                         className="rounded-md border border-red-300 px-2 py-1 text-xs text-red-700 hover:bg-red-50"
                       >
-                        Desativar
+                        Deactivate
                       </button>
                     </div>
                   </div>
                 </div>
               ))}
-              {selectedCustomer.nj_driver_licenses.length === 0 ? <p className="text-sm text-zinc-500">Sem NJ license.</p> : null}
+              {selectedCustomer.nj_driver_licenses.length === 0 ? <p className="text-sm text-zinc-500">No NJ licenses.</p> : null}
             </div>
           ) : (
-            <p className="mt-3 text-sm text-zinc-500">Selecione um customer para gerenciar licenses.</p>
+            <p className="mt-3 text-sm text-zinc-500">Select a customer to manage licenses.</p>
           )}
 
           <CollapsibleSection
-            title="Formulário NJ license"
-            subtitle="Criação, edição e renovação"
+            title="NJ license form"
+            subtitle="Create, edit, and renew"
             defaultOpen={njMode !== "create"}
           >
             <form onSubmit={(event) => void submitNj(event)} className="grid gap-3 sm:grid-cols-2">
@@ -978,7 +978,7 @@ export default function Customers() {
                 onChange={(event) => setNjForm((prev) => ({ ...prev, is_current: event.target.checked }))}
                 className="mr-2"
               />
-              Marcar como licença atual
+              Mark as current license
             </label>
 
             {njError ? <p className="text-sm text-red-600 sm:col-span-2">{njError}</p> : null}
@@ -988,7 +988,7 @@ export default function Customers() {
                 disabled={savingNj || !selectedCustomerId}
                 className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-60"
               >
-                {savingNj ? "Salvando..." : njMode === "create" ? "Adicionar NJ license" : njMode === "edit" ? "Salvar NJ license" : "Renovar NJ license"}
+                {savingNj ? "Saving..." : njMode === "create" ? "Add NJ license" : njMode === "edit" ? "Save NJ license" : "Renew NJ license"}
               </button>
             </div>
             </form>
@@ -1037,23 +1037,23 @@ export default function Customers() {
                         onClick={() => void deactivateBrazil(item.id)}
                         className="rounded-md border border-red-300 px-2 py-1 text-xs text-red-700 hover:bg-red-50"
                       >
-                        Desativar
+                        Deactivate
                       </button>
                     </div>
                   </div>
                 </div>
               ))}
               {selectedCustomer.brazil_driver_licenses.length === 0 ? (
-                <p className="text-sm text-zinc-500">Sem CNH Brasil.</p>
+                <p className="text-sm text-zinc-500">No Brazil licenses.</p>
               ) : null}
             </div>
           ) : (
-            <p className="mt-3 text-sm text-zinc-500">Selecione um customer para gerenciar CNH Brasil.</p>
+            <p className="mt-3 text-sm text-zinc-500">Select a customer to manage Brazil licenses.</p>
           )}
 
           <CollapsibleSection
-            title="Formulário CNH Brasil"
-            subtitle="Criação, edição e renovação"
+            title="Brazil license form"
+            subtitle="Create, edit, and renew"
             defaultOpen={brMode !== "create"}
           >
             <form onSubmit={(event) => void submitBrazil(event)} className="grid gap-3 sm:grid-cols-2">
@@ -1203,7 +1203,7 @@ export default function Customers() {
                 onChange={(event) => setBrForm((prev) => ({ ...prev, is_current: event.target.checked }))}
                 className="mr-2"
               />
-              Marcar como licença atual
+              Mark as current license
             </label>
             {brError ? <p className="text-sm text-red-600 sm:col-span-2">{brError}</p> : null}
             <div className="sm:col-span-2">
@@ -1212,7 +1212,7 @@ export default function Customers() {
                 disabled={savingBr || !selectedCustomerId}
                 className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-60"
               >
-                {savingBr ? "Salvando..." : brMode === "create" ? "Adicionar CNH Brasil" : brMode === "edit" ? "Salvar CNH Brasil" : "Renovar CNH Brasil"}
+                {savingBr ? "Saving..." : brMode === "create" ? "Add Brazil license" : brMode === "edit" ? "Save Brazil license" : "Renew Brazil license"}
               </button>
             </div>
             </form>
@@ -1261,21 +1261,21 @@ export default function Customers() {
                         onClick={() => void deactivatePassport(item.id)}
                         className="rounded-md border border-red-300 px-2 py-1 text-xs text-red-700 hover:bg-red-50"
                       >
-                        Desativar
+                        Deactivate
                       </button>
                     </div>
                   </div>
                 </div>
               ))}
-              {selectedCustomer.passports.length === 0 ? <p className="text-sm text-zinc-500">Sem passaporte.</p> : null}
+              {selectedCustomer.passports.length === 0 ? <p className="text-sm text-zinc-500">No passports.</p> : null}
             </div>
           ) : (
-            <p className="mt-3 text-sm text-zinc-500">Selecione um customer para gerenciar passaportes.</p>
+            <p className="mt-3 text-sm text-zinc-500">Select a customer to manage passports.</p>
           )}
 
           <CollapsibleSection
-            title="Formulário passaporte"
-            subtitle="Criação, edição e renovação"
+            title="Passport form"
+            subtitle="Create, edit, and renew"
             defaultOpen={passportMode !== "create"}
           >
             <form onSubmit={(event) => void submitPassport(event)} className="grid gap-3 sm:grid-cols-2">
@@ -1395,7 +1395,7 @@ export default function Customers() {
                 onChange={(event) => setPassportForm((prev) => ({ ...prev, is_current: event.target.checked }))}
                 className="mr-2"
               />
-              Marcar como passaporte atual
+              Mark as current passport
             </label>
             {passportError ? <p className="text-sm text-red-600 sm:col-span-2">{passportError}</p> : null}
             <div className="sm:col-span-2">
@@ -1405,12 +1405,12 @@ export default function Customers() {
                 className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-60"
               >
                 {savingPassport
-                  ? "Salvando..."
+                  ? "Saving..."
                   : passportMode === "create"
-                    ? "Adicionar passaporte"
+                    ? "Add passport"
                     : passportMode === "edit"
-                      ? "Salvar passaporte"
-                      : "Renovar passaporte"}
+                      ? "Save passport"
+                      : "Renew passport"}
               </button>
             </div>
             </form>

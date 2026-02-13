@@ -1,60 +1,60 @@
 # DriverThru
 
-Sistema web interno (monólito modular) para operação de emissão/renovação de documentos relacionados ao fluxo NJMVC.
+Internal web platform (modular monolith) for NJMVC-related licensing and document workflows.
 
-## O que já está implementado
+## Implemented Features
 
-- Autenticação com JWT em cookie `HttpOnly`.
-- CRUD de clientes.
-- CRUD de documentos por cliente:
-  - NJ Driver License (com renovação e histórico)
-  - Brazil Driver License (com renovação e histórico)
-  - Passport (com renovação e histórico)
-- Geração de PDF por template:
+- JWT authentication using an `HttpOnly` cookie.
+- Customer CRUD.
+- Customer document CRUD:
+  - NJ Driver License (renewal + history)
+  - Brazil Driver License (renewal + history)
+  - Passport (renewal + history)
+- PDF generation from templates:
   - `BA-208`
   - `affidavit`
-- Prefill de formulário a partir de dados do cliente + licença/passaporte selecionados.
-- Download de PDF gerado.
-- Listagem de PDFs já gerados (para baixar sem regenerar).
-- Dashboard com métricas + pendências reais por expiração.
-- Tracking de notificação de pendências (notificado/pendente).
+- Form prefill from customer data + selected license/passport.
+- Generated PDF download.
+- Generated PDF listing (download without regenerating).
+- Dashboard metrics + real expiration-based pending items.
+- Notification tracking for pending items (notified/pending).
 
-## Arquitetura
+## Architecture
 
 - Backend: FastAPI + SQLAlchemy + Alembic
 - Frontend: React + Vite + Tailwind
 - Infra: Docker Compose (Nginx, Backend, Frontend build, Postgres, MinIO)
-- Estilo: monólito modular (`auth`, `customers`, `documents`, `dashboard`, etc.)
+- Pattern: modular monolith (`auth`, `customers`, `documents`, `dashboard`, etc.)
 
-## Requisitos
+## Requirements
 
 - Docker + Docker Compose
-- (Opcional) Python local para rodar backend sem Docker
-- (Opcional) Node.js/Bun para dev frontend local
+- (Optional) Local Python for backend development without Docker
+- (Optional) Node.js/Bun for local frontend development
 
-## Setup rápido (Docker)
+## Quick Setup (Docker)
 
-1. Copie variáveis:
+1. Copy environment variables:
 
 ```bash
 cp .env.example .env
 ```
 
-2. Suba os serviços:
+2. Start services:
 
 ```bash
 docker compose up -d --build
 ```
 
-3. Acesse:
+3. Access:
 
 - App: `http://localhost`
-- Health backend (via nginx): `http://localhost/api/health`
-- MinIO Console: `http://localhost:9001` (se porta estiver exposta)
+- Backend health (via nginx): `http://localhost/api/health`
+- MinIO Console: `http://localhost:9001` (if exposed)
 
-Observação: no container do backend já executa `alembic upgrade head` no startup.
+Note: the backend container runs `alembic upgrade head` on startup.
 
-## Setup local (sem Docker)
+## Local Setup (without Docker)
 
 ### Backend
 
@@ -75,37 +75,37 @@ npm install
 npm run dev
 ```
 
-## Migrações Alembic
+## Alembic Migrations
 
-### Dentro do Docker (recomendado)
+### Inside Docker (recommended)
 
 ```bash
 docker compose exec backend alembic upgrade head
 ```
 
-### No host local
+### Local host
 
-Se rodar no host, o `DATABASE_URL` precisa apontar para banco acessível localmente (`localhost`), não para `db` (hostname interno da rede Docker).
+When running on host, `DATABASE_URL` must point to a locally reachable DB (`localhost`), not `db` (Docker internal hostname).
 
-## Usuários padrão
+## Default Users
 
-Configurados via `AUTH_USERS_JSON` em `backend/app/core/config.py`:
+Configured via `AUTH_USERS_JSON` in `backend/app/core/config.py`:
 
 - `admin` / `admin123`
 - `operator` / `operator123`
 
-Altere isso no `.env` para produção.
+Change this in `.env` for production.
 
-## Templates PDF
+## PDF Templates
 
-Por padrão, os templates são lidos de `documents/`:
+By default, templates are loaded from `documents/`:
 
 - `documents/BA-208.pdf`
 - `documents/affidavit.pdf`
 
-No Docker, essa pasta é montada em `/app/documents` no backend.
+In Docker, this folder is mounted to `/app/documents` in backend.
 
-## Principais endpoints
+## Main Endpoints
 
 ### Auth
 
@@ -119,7 +119,7 @@ No Docker, essa pasta é montada em `/app/documents` no backend.
 - `POST /api/customers`
 - `PATCH /api/customers/{id}`
 - `DELETE /api/customers/{id}`
-- Sub-rotas de NJ/BR/passport em `/api/customers/{id}/...`
+- NJ/BR/passport subroutes under `/api/customers/{id}/...`
 
 ### Documents
 
@@ -136,15 +136,15 @@ No Docker, essa pasta é montada em `/app/documents` no backend.
 - `GET /api/dashboard/pending`
 - `POST /api/dashboard/pending/notify`
 
-## Troubleshooting rápido
+## Quick Troubleshooting
 
-- `ModuleNotFoundError: jwt` no Alembic:
-  - já corrigido em import do módulo de dashboard; atualize branch e rode novamente.
-- `failed to resolve host 'db'` ao rodar Alembic local:
-  - rode via Docker (`docker compose exec backend ...`) ou ajuste `DATABASE_URL` para `localhost`.
-- Erros de constraint (`height_feet`, etc.):
-  - backend retorna `422`; confira payload enviado pelo front.
+- `ModuleNotFoundError: jwt` in Alembic:
+  - fixed by dashboard module import changes; update your branch and rerun.
+- `failed to resolve host 'db'` when running Alembic locally:
+  - run via Docker (`docker compose exec backend ...`) or update `DATABASE_URL` to `localhost`.
+- Constraint errors (`height_feet`, etc.):
+  - backend returns `422`; check the payload sent by frontend.
 
-## Estado atual
+## Current Status
 
-Projeto em evolução contínua. OCR e melhorias de UX ainda estão no roadmap.
+Project is under active development. OCR and UX improvements are still on the roadmap.

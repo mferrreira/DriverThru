@@ -22,7 +22,7 @@ export default function Login() {
     try {
       await login({ username, password });
     } catch {
-      setError("Usuário ou senha inválidos.");
+      setError("Invalid username or password.");
     } finally {
       setSubmitting(false);
     }
@@ -33,7 +33,7 @@ export default function Login() {
       <form onSubmit={onSubmit} className="w-full max-w-sm border rounded-lg p-6 space-y-4">
         <h1 className="text-xl font-semibold">DriverThru Login</h1>
         <div className="space-y-1">
-          <label className="text-sm">Usuário</label>
+          <label className="text-sm">Username</label>
           <input
             className="w-full border rounded px-3 py-2"
             value={username}
@@ -43,7 +43,7 @@ export default function Login() {
           />
         </div>
         <div className="space-y-1">
-          <label className="text-sm">Senha</label>
+          <label className="text-sm">Password</label>
           <input
             className="w-full border rounded px-3 py-2"
             type="password"
@@ -61,7 +61,7 @@ export default function Login() {
           className="w-full bg-black text-white rounded px-3 py-2 disabled:opacity-50"
           disabled={submitting}
         >
-          {submitting ? "Entrando..." : "Entrar"}
+          {submitting ? "Signing in..." : "Sign in"}
         </button>
       </form>
     </div>

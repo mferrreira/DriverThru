@@ -53,7 +53,7 @@ export default function Header() {
             <p className="text-xs uppercase tracking-wide text-zinc-500">{user?.role}</p>
           </div>
           <Button variant="outline" size="sm" onClick={onLogout}>
-            Sair
+            Sign out
           </Button>
         </div>
       </div>
