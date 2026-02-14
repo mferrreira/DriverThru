@@ -13,7 +13,7 @@ const navItems = [
 function linkClassName(active: boolean) {
   return [
     "px-3 py-2 text-sm rounded-md transition-colors",
-    active ? "bg-zinc-900 text-white" : "text-zinc-700 hover:bg-zinc-200/70",
+    active ? "bg-linear-to-r from-sky-700 to-blue-700 text-white shadow-sm" : "text-slate-700 hover:bg-sky-50",
   ].join(" ");
 }
 
@@ -27,15 +27,15 @@ export default function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-30 border-b border-zinc-200/70 bg-white/95 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-sky-100/80 bg-white/90 backdrop-blur">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="grid h-9 w-9 place-items-center rounded-md bg-zinc-900 text-xs font-bold text-white">
+          <div className="grid h-9 w-9 place-items-center rounded-md bg-linear-to-br from-emerald-500 via-teal-500 to-blue-600 text-xs font-bold text-white shadow-sm">
             DT
           </div>
           <div>
-            <p className="text-sm font-semibold leading-4 text-zinc-900">DriverThru</p>
-            <p className="text-xs text-zinc-500">NJMVC Operations</p>
+            <p className="text-sm font-semibold leading-4 text-slate-900">DriverThru</p>
+            <p className="text-xs text-slate-500">NJMVC Operations</p>
           </div>
         </div>
 
@@ -49,8 +49,8 @@ export default function Header() {
 
         <div className="flex items-center gap-3">
           <div className="hidden text-right sm:block">
-            <p className="text-sm font-medium text-zinc-800">{user?.username}</p>
-            <p className="text-xs uppercase tracking-wide text-zinc-500">{user?.role}</p>
+            <p className="text-sm font-medium text-slate-800">{user?.username}</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">{user?.role}</p>
           </div>
           <Button variant="outline" size="sm" onClick={onLogout}>
             Sign out

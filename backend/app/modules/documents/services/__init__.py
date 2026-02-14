@@ -1,6 +1,4 @@
-from __future__ import annotations
-
-from app.modules.documents.services import (
+from .documents import (
     CustomerNotFoundError,
     DocumentNotFoundError,
     InvalidSelectionError,

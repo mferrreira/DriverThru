@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 
 import { apiFetch } from "../../lib/api";
-import CollapsibleSection from "./CollapsibleSection";
 import CustomersSidebar from "./CustomersSidebar";
-import { brazilCategoryOptions, eyeColorOptions, genderOptions, njClassOptions, njEndorsementOptions, njRestrictionOptions } from "./constants";
 import { defaultBrazilForm, defaultCustomerForm, defaultNJForm, defaultPassportForm, mapAddressForm, normalizeDate, normalizeString } from "./formUtils";
+import BrazilLicensesSection from "./sections/BrazilLicensesSection";
+import CustomerCoreSection from "./sections/CustomerCoreSection";
+import NJLicensesSection from "./sections/NJLicensesSection";
+import PassportsSection from "./sections/PassportsSection";
 import type {
   AddressForm,
   AddressType,
@@ -556,866 +558,88 @@ export default function Customers() {
       />
 
       <main className="space-y-6 lg:col-span-8">
-        <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-zinc-900">
-              {customerMode === "create" ? "New customer" : `Edit customer: ${selectedCustomerName}`}
-            </h2>
-            {selectedCustomerId ? (
-              <button
-                type="button"
-                onClick={() => void deactivateCustomer(selectedCustomerId)}
-                className="rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
-              >
-                Deactivate
-              </button>
-            ) : null}
-          </div>
-          <CollapsibleSection
-            title="Customer data"
-            subtitle="Expand to create/edit core customer data and addresses"
-            defaultOpen
-          >
-            <form onSubmit={(event) => void submitCustomer(event)} className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="text-sm">
-                First name *
-                <input
-                  required
-                  value={customerForm.first_name}
-                  onChange={(event) => setCustomerForm((prev) => ({ ...prev, first_name: event.target.value }))}
-                  className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-                />
-              </label>
-              <label className="text-sm">
-                Last name *
-                <input
-                  required
-                  value={customerForm.last_name}
-                  onChange={(event) => setCustomerForm((prev) => ({ ...prev, last_name: event.target.value }))}
-                  className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-                />
-              </label>
-              <label className="text-sm">
-                Middle name
-                <input
-                  value={customerForm.middle_name}
-                  onChange={(event) => setCustomerForm((prev) => ({ ...prev, middle_name: event.target.value }))}
-                  className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-                />
-              </label>
-              <label className="text-sm">
-                Suffix
-                <input
-                  value={customerForm.suffix}
-                  onChange={(event) => setCustomerForm((prev) => ({ ...prev, suffix: event.target.value }))}
-                  className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-                />
-              </label>
-              <label className="text-sm">
-                Date of birth *
-                <input
-                  required
-                  type="date"
-                  value={customerForm.date_of_birth}
-                  onChange={(event) => setCustomerForm((prev) => ({ ...prev, date_of_birth: event.target.value }))}
-                  className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-                />
-              </label>
-              <label className="text-sm">
-                Gender
-                <select
-                  value={customerForm.gender}
-                  onChange={(event) => setCustomerForm((prev) => ({ ...prev, gender: event.target.value as CustomerForm["gender"] }))}
-                  className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-                >
-                  <option value="">Select</option>
-                  {genderOptions.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="text-sm">
-                Eye color
-                <select
-                  value={customerForm.eye_color}
-                  onChange={(event) => setCustomerForm((prev) => ({ ...prev, eye_color: event.target.value }))}
-                  className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-                >
-                  <option value="">Select</option>
-                  {eyeColorOptions.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="text-sm">
-                Weight (lbs)
-                <input
-                  type="number"
-                  min={0}
-                  step="0.1"
-                  value={customerForm.weight_lbs}
-                  onChange={(event) => setCustomerForm((prev) => ({ ...prev, weight_lbs: event.target.value }))}
-                  className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-                />
-              </label>
-              <label className="text-sm">
-                Height (feet)
-                <input
-                  type="number"
-                  min={0}
-                  max={8}
-                  value={customerForm.height_feet}
-                  onChange={(event) => setCustomerForm((prev) => ({ ...prev, height_feet: event.target.value }))}
-                  className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-                />
-              </label>
-              <label className="text-sm">
-                Height (inches)
-                <input
-                  type="number"
-                  min={0}
-                  max={11}
-                  value={customerForm.height_inches}
-                  onChange={(event) => setCustomerForm((prev) => ({ ...prev, height_inches: event.target.value }))}
-                  className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-                />
-              </label>
-            </div>
+        <CustomerCoreSection
+          customerMode={customerMode}
+          selectedCustomerName={selectedCustomerName}
+          selectedCustomerId={selectedCustomerId}
+          customerForm={customerForm}
+          setCustomerForm={setCustomerForm}
+          customerError={customerError}
+          savingCustomer={savingCustomer}
+          onSubmit={(event) => void submitCustomer(event)}
+          onDeactivate={(customerId) => void deactivateCustomer(customerId)}
+        />
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="text-sm">
-                Phone
-                <input
-                  value={customerForm.phone_number}
-                  onChange={(event) => setCustomerForm((prev) => ({ ...prev, phone_number: event.target.value }))}
-                  className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-                />
-              </label>
-              <label className="text-sm">
-                Email
-                <input
-                  type="email"
-                  value={customerForm.email}
-                  onChange={(event) => setCustomerForm((prev) => ({ ...prev, email: event.target.value }))}
-                  className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-                />
-              </label>
-            </div>
+        <NJLicensesSection
+          selectedCustomer={selectedCustomer}
+          selectedCustomerId={selectedCustomerId}
+          njMode={njMode}
+          njForm={njForm}
+          setNjForm={setNjForm}
+          savingNj={savingNj}
+          njError={njError}
+          onSubmit={(event) => void submitNj(event)}
+          onDeactivate={(licenseId) => void deactivateNj(licenseId)}
+          onStartEdit={(item) => {
+            setNjMode("edit");
+            setEditingNjId(item.id);
+            hydrateNjForm(item);
+          }}
+          onStartRenew={(item) => {
+            setNjMode("renew");
+            setEditingNjId(item.id);
+            hydrateNjForm(item);
+            setNjForm((prev) => ({ ...prev, is_current: true }));
+          }}
+          onToggleEndorsement={toggleNjEndorsement}
+          onToggleRestriction={toggleNjRestriction}
+        />
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="text-sm">
-                <input
-                  type="checkbox"
-                  checked={customerForm.has_no_ssn}
-                  onChange={(event) => setCustomerForm((prev) => ({ ...prev, has_no_ssn: event.target.checked }))}
-                  className="mr-2"
-                />
-                Customer has no SSN
-              </label>
-              <label className="text-sm">
-                SSN
-                <input
-                  disabled={customerForm.has_no_ssn}
-                  value={customerForm.ssn_encrypted}
-                  onChange={(event) => setCustomerForm((prev) => ({ ...prev, ssn_encrypted: event.target.value }))}
-                  className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 disabled:bg-zinc-100"
-                />
-              </label>
-            </div>
+        <BrazilLicensesSection
+          selectedCustomer={selectedCustomer}
+          selectedCustomerId={selectedCustomerId}
+          brMode={brMode}
+          brForm={brForm}
+          setBrForm={setBrForm}
+          savingBr={savingBr}
+          brError={brError}
+          onSubmit={(event) => void submitBrazil(event)}
+          onDeactivate={(licenseId) => void deactivateBrazil(licenseId)}
+          onStartEdit={(item) => {
+            setBrMode("edit");
+            setEditingBrId(item.id);
+            hydrateBrazilForm(item);
+          }}
+          onStartRenew={(item) => {
+            setBrMode("renew");
+            setEditingBrId(item.id);
+            hydrateBrazilForm(item);
+            setBrForm((prev) => ({ ...prev, is_current: true }));
+          }}
+        />
 
-            {(["residential", "mailing", "out_of_state"] as AddressType[]).map((addressType) => {
-              const labelMap: Record<AddressType, string> = {
-                residential: "Residential address",
-                mailing: "Mailing address",
-                out_of_state: "Out-of-state address",
-              };
-              const address = customerForm[addressType];
-              return (
-                <fieldset key={addressType} className="rounded-lg border border-zinc-200 p-3">
-                  <legend className="px-1 text-sm font-semibold text-zinc-700">{labelMap[addressType]}</legend>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="text-sm">
-                      Street
-                      <input
-                        value={address.street}
-                        onChange={(event) =>
-                          setCustomerForm((prev) => ({
-                            ...prev,
-                            [addressType]: { ...prev[addressType], street: event.target.value },
-                          }))
-                        }
-                        className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-                      />
-                    </label>
-                    <label className="text-sm">
-                      Apt
-                      <input
-                        value={address.apt}
-                        onChange={(event) =>
-                          setCustomerForm((prev) => ({
-                            ...prev,
-                            [addressType]: { ...prev[addressType], apt: event.target.value },
-                          }))
-                        }
-                        className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-                      />
-                    </label>
-                    <label className="text-sm">
-                      City
-                      <input
-                        value={address.city}
-                        onChange={(event) =>
-                          setCustomerForm((prev) => ({
-                            ...prev,
-                            [addressType]: { ...prev[addressType], city: event.target.value },
-                          }))
-                        }
-                        className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-                      />
-                    </label>
-                    <label className="text-sm">
-                      State
-                      <input
-                        value={address.state}
-                        onChange={(event) =>
-                          setCustomerForm((prev) => ({
-                            ...prev,
-                            [addressType]: { ...prev[addressType], state: event.target.value },
-                          }))
-                        }
-                        className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-                      />
-                    </label>
-                    <label className="text-sm">
-                      Zip
-                      <input
-                        value={address.zip_code}
-                        onChange={(event) =>
-                          setCustomerForm((prev) => ({
-                            ...prev,
-                            [addressType]: { ...prev[addressType], zip_code: event.target.value },
-                          }))
-                        }
-                        className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-                      />
-                    </label>
-                    <label className="text-sm">
-                      County
-                      <input
-                        value={address.county}
-                        onChange={(event) =>
-                          setCustomerForm((prev) => ({
-                            ...prev,
-                            [addressType]: { ...prev[addressType], county: event.target.value },
-                          }))
-                        }
-                        className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-                      />
-                    </label>
-                  </div>
-                </fieldset>
-              );
-            })}
-
-            {customerError ? <p className="text-sm text-red-600">{customerError}</p> : null}
-            <button
-              type="submit"
-              disabled={savingCustomer}
-              className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-60"
-            >
-              {savingCustomer ? "Saving..." : customerMode === "create" ? "Create customer" : "Save changes"}
-            </button>
-            </form>
-          </CollapsibleSection>
-        </section>
-
-        <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-zinc-900">NJ Driver Licenses</h3>
-          <p className="mt-1 text-sm text-zinc-500">Class, endorsements, and restrictions with renewal history.</p>
-          {selectedCustomer ? (
-            <div className="mt-4 space-y-2">
-              {selectedCustomer.nj_driver_licenses.map((item) => (
-                <div key={item.id} className="rounded-lg border border-zinc-200 p-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="text-sm text-zinc-700">
-                      <p className="font-semibold">
-                        #{item.id} | {item.license_number_encrypted || "No number"} | Class {item.license_class || "-"}
-                      </p>
-                      <p>Current: {item.is_current ? "yes" : "no"} | Active: {item.active ? "yes" : "no"}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setNjMode("edit");
-                          setEditingNjId(item.id);
-                          hydrateNjForm(item);
-                        }}
-                        className="rounded-md border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-50"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setNjMode("renew");
-                          setEditingNjId(item.id);
-                          hydrateNjForm(item);
-                          setNjForm((prev) => ({ ...prev, is_current: true }));
-                        }}
-                        className="rounded-md border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-50"
-                      >
-                        Renovar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void deactivateNj(item.id)}
-                        className="rounded-md border border-red-300 px-2 py-1 text-xs text-red-700 hover:bg-red-50"
-                      >
-                        Deactivate
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {selectedCustomer.nj_driver_licenses.length === 0 ? <p className="text-sm text-zinc-500">No NJ licenses.</p> : null}
-            </div>
-          ) : (
-            <p className="mt-3 text-sm text-zinc-500">Select a customer to manage licenses.</p>
-          )}
-
-          <CollapsibleSection
-            title="NJ license form"
-            subtitle="Create, edit, and renew"
-            defaultOpen={njMode !== "create"}
-          >
-            <form onSubmit={(event) => void submitNj(event)} className="grid gap-3 sm:grid-cols-2">
-            <label className="text-sm">
-              License number
-              <input
-                value={njForm.license_number_encrypted}
-                onChange={(event) => setNjForm((prev) => ({ ...prev, license_number_encrypted: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              License class
-              <select
-                value={njForm.license_class}
-                onChange={(event) => setNjForm((prev) => ({ ...prev, license_class: event.target.value as NJForm["license_class"] }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              >
-                <option value="">Select</option>
-                {njClassOptions.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="text-sm">
-              Issue date
-              <input
-                type="date"
-                value={njForm.issue_date}
-                onChange={(event) => setNjForm((prev) => ({ ...prev, issue_date: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Expiration date
-              <input
-                type="date"
-                value={njForm.expiration_date}
-                onChange={(event) => setNjForm((prev) => ({ ...prev, expiration_date: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-
-            <fieldset className="sm:col-span-2">
-              <legend className="text-sm font-medium">Endorsements</legend>
-              <div className="mt-1 flex flex-wrap gap-3">
-                {njEndorsementOptions.map((item) => (
-                  <label key={item} className="text-sm">
-                    <input
-                      type="checkbox"
-                      checked={njForm.endorsements.includes(item)}
-                      onChange={() => toggleNjEndorsement(item)}
-                      className="mr-1"
-                    />
-                    {item}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-
-            <fieldset className="sm:col-span-2">
-              <legend className="text-sm font-medium">Restrictions</legend>
-              <div className="mt-1 flex flex-wrap gap-3">
-                {njRestrictionOptions.map((item) => (
-                  <label key={item} className="text-sm">
-                    <input
-                      type="checkbox"
-                      checked={njForm.restrictions.includes(item)}
-                      onChange={() => toggleNjRestriction(item)}
-                      className="mr-1"
-                    />
-                    {item}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-
-            <label className="text-sm sm:col-span-2">
-              <input
-                type="checkbox"
-                checked={njForm.is_current}
-                onChange={(event) => setNjForm((prev) => ({ ...prev, is_current: event.target.checked }))}
-                className="mr-2"
-              />
-              Mark as current license
-            </label>
-
-            {njError ? <p className="text-sm text-red-600 sm:col-span-2">{njError}</p> : null}
-            <div className="sm:col-span-2">
-              <button
-                type="submit"
-                disabled={savingNj || !selectedCustomerId}
-                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-60"
-              >
-                {savingNj ? "Saving..." : njMode === "create" ? "Add NJ license" : njMode === "edit" ? "Save NJ license" : "Renew NJ license"}
-              </button>
-            </div>
-            </form>
-          </CollapsibleSection>
-        </section>
-
-        <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-zinc-900">Brazil Driver Licenses</h3>
-          {selectedCustomer ? (
-            <div className="mt-4 space-y-2">
-              {selectedCustomer.brazil_driver_licenses.map((item) => (
-                <div key={item.id} className="rounded-lg border border-zinc-200 p-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="text-sm text-zinc-700">
-                      <p className="font-semibold">
-                        #{item.id} | {item.full_name} | Cat. {item.category || "-"}
-                      </p>
-                      <p>Current: {item.is_current ? "yes" : "no"} | Active: {item.active ? "yes" : "no"}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setBrMode("edit");
-                          setEditingBrId(item.id);
-                          hydrateBrazilForm(item);
-                        }}
-                        className="rounded-md border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-50"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setBrMode("renew");
-                          setEditingBrId(item.id);
-                          hydrateBrazilForm(item);
-                          setBrForm((prev) => ({ ...prev, is_current: true }));
-                        }}
-                        className="rounded-md border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-50"
-                      >
-                        Renovar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void deactivateBrazil(item.id)}
-                        className="rounded-md border border-red-300 px-2 py-1 text-xs text-red-700 hover:bg-red-50"
-                      >
-                        Deactivate
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {selectedCustomer.brazil_driver_licenses.length === 0 ? (
-                <p className="text-sm text-zinc-500">No Brazil licenses.</p>
-              ) : null}
-            </div>
-          ) : (
-            <p className="mt-3 text-sm text-zinc-500">Select a customer to manage Brazil licenses.</p>
-          )}
-
-          <CollapsibleSection
-            title="Brazil license form"
-            subtitle="Create, edit, and renew"
-            defaultOpen={brMode !== "create"}
-          >
-            <form onSubmit={(event) => void submitBrazil(event)} className="grid gap-3 sm:grid-cols-2">
-            <label className="text-sm">
-              Full name *
-              <input
-                required
-                value={brForm.full_name}
-                onChange={(event) => setBrForm((prev) => ({ ...prev, full_name: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Category
-              <select
-                value={brForm.category}
-                onChange={(event) => setBrForm((prev) => ({ ...prev, category: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              >
-                <option value="">Select</option>
-                {brazilCategoryOptions.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="text-sm">
-              CPF
-              <input
-                value={brForm.cpf_encrypted}
-                onChange={(event) => setBrForm((prev) => ({ ...prev, cpf_encrypted: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Identity number
-              <input
-                value={brForm.identity_number}
-                onChange={(event) => setBrForm((prev) => ({ ...prev, identity_number: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Issuing agency
-              <input
-                value={brForm.issuing_agency}
-                onChange={(event) => setBrForm((prev) => ({ ...prev, issuing_agency: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Issuing state
-              <input
-                value={brForm.issuing_state}
-                onChange={(event) => setBrForm((prev) => ({ ...prev, issuing_state: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Registry number
-              <input
-                value={brForm.registry_number}
-                onChange={(event) => setBrForm((prev) => ({ ...prev, registry_number: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              First license date
-              <input
-                type="date"
-                value={brForm.first_license_date}
-                onChange={(event) => setBrForm((prev) => ({ ...prev, first_license_date: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Issue date
-              <input
-                type="date"
-                value={brForm.issue_date}
-                onChange={(event) => setBrForm((prev) => ({ ...prev, issue_date: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Expiration date
-              <input
-                type="date"
-                value={brForm.expiration_date}
-                onChange={(event) => setBrForm((prev) => ({ ...prev, expiration_date: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Father name
-              <input
-                value={brForm.father_name}
-                onChange={(event) => setBrForm((prev) => ({ ...prev, father_name: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Mother name
-              <input
-                value={brForm.mother_name}
-                onChange={(event) => setBrForm((prev) => ({ ...prev, mother_name: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Issue place
-              <input
-                value={brForm.issue_place}
-                onChange={(event) => setBrForm((prev) => ({ ...prev, issue_place: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Paper number
-              <input
-                value={brForm.paper_number}
-                onChange={(event) => setBrForm((prev) => ({ ...prev, paper_number: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Issue code
-              <input
-                value={brForm.issue_code}
-                onChange={(event) => setBrForm((prev) => ({ ...prev, issue_code: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm sm:col-span-2">
-              Observations
-              <textarea
-                value={brForm.observations}
-                onChange={(event) => setBrForm((prev) => ({ ...prev, observations: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm sm:col-span-2">
-              <input
-                type="checkbox"
-                checked={brForm.is_current}
-                onChange={(event) => setBrForm((prev) => ({ ...prev, is_current: event.target.checked }))}
-                className="mr-2"
-              />
-              Mark as current license
-            </label>
-            {brError ? <p className="text-sm text-red-600 sm:col-span-2">{brError}</p> : null}
-            <div className="sm:col-span-2">
-              <button
-                type="submit"
-                disabled={savingBr || !selectedCustomerId}
-                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-60"
-              >
-                {savingBr ? "Saving..." : brMode === "create" ? "Add Brazil license" : brMode === "edit" ? "Save Brazil license" : "Renew Brazil license"}
-              </button>
-            </div>
-            </form>
-          </CollapsibleSection>
-        </section>
-
-        <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-zinc-900">Passports</h3>
-          {selectedCustomer ? (
-            <div className="mt-4 space-y-2">
-              {selectedCustomer.passports.map((item) => (
-                <div key={item.id} className="rounded-lg border border-zinc-200 p-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="text-sm text-zinc-700">
-                      <p className="font-semibold">
-                        #{item.id} | {item.passport_number_encrypted} | {item.surname}, {item.given_name}
-                      </p>
-                      <p>Current: {item.is_current ? "yes" : "no"} | Active: {item.active ? "yes" : "no"}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPassportMode("edit");
-                          setEditingPassportId(item.id);
-                          hydratePassportForm(item);
-                        }}
-                        className="rounded-md border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-50"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPassportMode("renew");
-                          setEditingPassportId(item.id);
-                          hydratePassportForm(item);
-                          setPassportForm((prev) => ({ ...prev, is_current: true }));
-                        }}
-                        className="rounded-md border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-50"
-                      >
-                        Renovar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void deactivatePassport(item.id)}
-                        className="rounded-md border border-red-300 px-2 py-1 text-xs text-red-700 hover:bg-red-50"
-                      >
-                        Deactivate
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {selectedCustomer.passports.length === 0 ? <p className="text-sm text-zinc-500">No passports.</p> : null}
-            </div>
-          ) : (
-            <p className="mt-3 text-sm text-zinc-500">Select a customer to manage passports.</p>
-          )}
-
-          <CollapsibleSection
-            title="Passport form"
-            subtitle="Create, edit, and renew"
-            defaultOpen={passportMode !== "create"}
-          >
-            <form onSubmit={(event) => void submitPassport(event)} className="grid gap-3 sm:grid-cols-2">
-            <label className="text-sm">
-              Passport number *
-              <input
-                required
-                value={passportForm.passport_number_encrypted}
-                onChange={(event) => setPassportForm((prev) => ({ ...prev, passport_number_encrypted: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Document type
-              <input
-                value={passportForm.document_type}
-                onChange={(event) => setPassportForm((prev) => ({ ...prev, document_type: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Issuing country
-              <input
-                value={passportForm.issuing_country}
-                onChange={(event) => setPassportForm((prev) => ({ ...prev, issuing_country: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Nationality
-              <input
-                value={passportForm.nationality}
-                onChange={(event) => setPassportForm((prev) => ({ ...prev, nationality: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Surname *
-              <input
-                required
-                value={passportForm.surname}
-                onChange={(event) => setPassportForm((prev) => ({ ...prev, surname: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Given name *
-              <input
-                required
-                value={passportForm.given_name}
-                onChange={(event) => setPassportForm((prev) => ({ ...prev, given_name: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Middle name
-              <input
-                value={passportForm.middle_name}
-                onChange={(event) => setPassportForm((prev) => ({ ...prev, middle_name: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Birth place
-              <input
-                value={passportForm.birth_place}
-                onChange={(event) => setPassportForm((prev) => ({ ...prev, birth_place: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Father name
-              <input
-                value={passportForm.father_name}
-                onChange={(event) => setPassportForm((prev) => ({ ...prev, father_name: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Mother name
-              <input
-                value={passportForm.mother_name}
-                onChange={(event) => setPassportForm((prev) => ({ ...prev, mother_name: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Issue date
-              <input
-                type="date"
-                value={passportForm.issue_date}
-                onChange={(event) => setPassportForm((prev) => ({ ...prev, issue_date: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Expiration date
-              <input
-                type="date"
-                value={passportForm.expiration_date}
-                onChange={(event) => setPassportForm((prev) => ({ ...prev, expiration_date: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm sm:col-span-2">
-              Issuing authority
-              <input
-                value={passportForm.issuing_authority}
-                onChange={(event) => setPassportForm((prev) => ({ ...prev, issuing_authority: event.target.value }))}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm sm:col-span-2">
-              <input
-                type="checkbox"
-                checked={passportForm.is_current}
-                onChange={(event) => setPassportForm((prev) => ({ ...prev, is_current: event.target.checked }))}
-                className="mr-2"
-              />
-              Mark as current passport
-            </label>
-            {passportError ? <p className="text-sm text-red-600 sm:col-span-2">{passportError}</p> : null}
-            <div className="sm:col-span-2">
-              <button
-                type="submit"
-                disabled={savingPassport || !selectedCustomerId}
-                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-800 disabled:opacity-60"
-              >
-                {savingPassport
-                  ? "Saving..."
-                  : passportMode === "create"
-                    ? "Add passport"
-                    : passportMode === "edit"
-                      ? "Save passport"
-                      : "Renew passport"}
-              </button>
-            </div>
-            </form>
-          </CollapsibleSection>
-        </section>
+        <PassportsSection
+          selectedCustomer={selectedCustomer}
+          selectedCustomerId={selectedCustomerId}
+          passportMode={passportMode}
+          passportForm={passportForm}
+          setPassportForm={setPassportForm}
+          savingPassport={savingPassport}
+          passportError={passportError}
+          onSubmit={(event) => void submitPassport(event)}
+          onDeactivate={(passportId) => void deactivatePassport(passportId)}
+          onStartEdit={(item) => {
+            setPassportMode("edit");
+            setEditingPassportId(item.id);
+            hydratePassportForm(item);
+          }}
+          onStartRenew={(item) => {
+            setPassportMode("renew");
+            setEditingPassportId(item.id);
+            hydratePassportForm(item);
+            setPassportForm((prev) => ({ ...prev, is_current: true }));
+          }}
+        />
       </main>
     </div>
   );
