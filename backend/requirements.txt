@@ -25,6 +25,8 @@ markdown-it-py==4.0.0
 MarkupSafe==3.0.3
 mdurl==0.1.2
 minio==7.2.20
+Pillow==11.3.0
+pillow-heif==0.22.0
 psycopg==3.3.2
 psycopg-binary==3.3.2
 pycparser==3.0

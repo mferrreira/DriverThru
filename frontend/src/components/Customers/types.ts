@@ -1,4 +1,5 @@
 export type Gender = "female" | "male" | "non_binary" | "undisclosed";
+export type EyeColor = "BLK" | "BLU" | "BRN" | "GRN" | "GRY" | "HAZ" | "MAR" | "MUL" | "XXX";
 export type NJLicenseClass = "A" | "B" | "C" | "D" | "E" | "I";
 export type NJEndorsement = "M" | "F" | "H" | "N" | "P" | "S" | "T" | "X";
 export type NJRestriction = "1" | "2" | "3" | "4" | "L" | "P";
@@ -130,7 +131,7 @@ export type CustomerForm = {
   has_no_ssn: boolean;
   ssn_encrypted: string;
   gender: "" | Gender;
-  eye_color: string;
+  eye_color: "" | EyeColor;
   weight_lbs: string;
   height_feet: string;
   height_inches: string;

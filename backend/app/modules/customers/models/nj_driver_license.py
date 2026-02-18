@@ -36,7 +36,7 @@ class NJDriverLicense(TimestampMixin, Base):
         nullable=False,
         index=True,
     )
-    license_number_encrypted: Mapped[str | None] = mapped_column(Text, unique=True)
+    license_number_encrypted: Mapped[str | None] = mapped_column(Text)
     issue_date: Mapped[date | None] = mapped_column(Date)
     expiration_date: Mapped[date | None] = mapped_column(Date)
     license_class: Mapped[NJLicenseClass | None] = mapped_column(

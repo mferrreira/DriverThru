@@ -42,18 +42,12 @@ BA208_FIELD_ALIASES: dict[str, str] = {
 AFFIDAVIT_OVERLAY_FIELDS = [
     "full_name",
     "date_of_birth",
-    "applicant_signature",
     "applicant_date",
-    "county",
-    "appeared_name",
 ]
 
 # (value key, anchor text, x offset, y offset, font size)
 AFFIDAVIT_ANCHOR_RULES: list[tuple[str, str, float, float, int]] = [
     ("full_name", "I,", 26.0, 0.0, 11),
     ("date_of_birth", "born on", 54.0, 0.0, 11),
-    ("applicant_signature", "Applicant signature", 0.0, -12.0, 11),
-    ("applicant_date", "Date", 0.0, -12.0, 11),
-    ("county", "COUNTY OF", 90.0, 0.0, 11),
-    ("appeared_name", "before me personally appeared", 210.0, 0.0, 11),
+    ("applicant_date", "Date", 0.0, 12.0, 11),
 ]

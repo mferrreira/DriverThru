@@ -4,6 +4,7 @@ from io import BytesIO
 from pathlib import Path
 
 from pypdf import PdfReader, PdfWriter
+from pypdf.generic import BooleanObject, NameObject, TextStringObject
 from reportlab.lib.colors import black
 from reportlab.pdfgen import canvas
 
@@ -51,9 +52,13 @@ def render_template_pdf(template_key: TemplateKey, values: dict[str, str]) -> tu
 
     if template_fields:
         writer.clone_document_from_reader(reader)
-        writer.set_need_appearances_writer(False)
+        if template_key == "ba208":
+            _apply_ba208_field_appearance(writer, font_size=9)
+            writer.set_need_appearances_writer(True)
+        else:
+            writer.set_need_appearances_writer(False)
         for page in writer.pages:
-            writer.update_page_form_field_values(page, resolved, auto_regenerate=True)
+            writer.update_page_form_field_values(page, resolved, auto_regenerate=(template_key != "ba208"))
         matched_fields = len(resolved)
     elif template_key == "affidavit":
         matched_fields = _render_affidavit_overlay(reader=reader, writer=writer, values=values)
@@ -147,3 +152,32 @@ def _extract_anchor_positions(page: object) -> dict[str, tuple[float, float]]:
 
 def _normalize_space(value: str) -> str:
     return " ".join((value or "").split()).strip().lower()
+
+
+def _apply_ba208_field_appearance(writer: PdfWriter, font_size: int) -> None:
+    acro_form_ref = writer._root_object.get("/AcroForm")
+    if not acro_form_ref:
+        return
+
+    acro_form = acro_form_ref.get_object()
+    da = TextStringObject(f"/Helv {font_size} Tf 0 g")
+    acro_form[NameObject("/DA")] = da
+    acro_form[NameObject("/NeedAppearances")] = BooleanObject(True)
+
+    fields = acro_form.get("/Fields")
+    if not fields:
+        return
+
+    def apply_field_da(field_ref: object) -> None:
+        field_obj = field_ref.get_object()
+        field_type = field_obj.get("/FT")
+        if field_type == "/Tx":
+            field_obj[NameObject("/DA")] = da
+
+        kids = field_obj.get("/Kids")
+        if kids:
+            for kid in kids:
+                apply_field_da(kid)
+
+    for field in fields:
+        apply_field_da(field)

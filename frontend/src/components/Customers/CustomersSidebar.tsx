@@ -25,12 +25,12 @@ export default function CustomersSidebar({
   onSelectCustomer,
 }: CustomersSidebarProps) {
   return (
-    <aside className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm lg:col-span-4">
+    <aside className="rounded-2xl border border-sky-100/90 bg-white/90 p-4 shadow-sm backdrop-blur-sm lg:col-span-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-zinc-900">Customers</h1>
+        <h1 className="text-lg font-semibold text-slate-900">Customers</h1>
         <button
           type="button"
-          className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+          className="rounded-md bg-linear-to-r from-sky-700 to-blue-700 px-3 py-1.5 text-sm font-semibold text-white hover:brightness-110"
           onClick={onCreateClick}
         >
           New
@@ -42,12 +42,12 @@ export default function CustomersSidebar({
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder="Search name/email/phone"
-          className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
         />
         <button
           type="button"
           onClick={onSearchSubmit}
-          className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+          className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
           Search
         </button>
@@ -65,7 +65,9 @@ export default function CustomersSidebar({
             onClick={() => onSelectCustomer(item.id)}
             className={[
               "w-full rounded-lg border p-3 text-left transition",
-              selectedCustomerId === item.id ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 hover:bg-zinc-50",
+              selectedCustomerId === item.id
+                ? "border-sky-700 bg-linear-to-r from-sky-700 to-blue-700 text-white shadow-sm"
+                : "border-slate-200 hover:bg-slate-50",
             ].join(" ")}
           >
             <p className="text-sm font-semibold">{fullName(item)}</p>

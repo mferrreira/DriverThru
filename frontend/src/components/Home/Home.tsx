@@ -29,10 +29,10 @@ type PendingResponse = {
 };
 
 const quickActions = [
-  { label: "New customer", to: "/customers" },
-  { label: "Generate BA-208", to: "/documents" },
-  { label: "Generate Affidavit", to: "/documents" },
-  { label: "Export report", to: "/reports" },
+  { label: "New customer", to: "/customers", style: "from-sky-600 to-blue-700" },
+  { label: "Generate BA-208", to: "/documents", style: "from-emerald-500 to-teal-600" },
+  { label: "Generate Affidavit", to: "/documents", style: "from-indigo-600 to-blue-700" },
+  { label: "Export report", to: "/reports", style: "from-amber-500 to-orange-600" },
 ];
 
 export default function Home() {
@@ -138,18 +138,50 @@ export default function Home() {
   }
 
   const metrics = [
-    { label: "Registered customers", value: summary?.customers_total ?? 0, tone: "text-zinc-900" },
-    { label: "Docs generated today", value: summary?.documents_generated_today ?? 0, tone: "text-zinc-900" },
-    { label: "Expiring in 30 days", value: summary?.expiring_in_30_days ?? 0, tone: "text-amber-700" },
-    { label: "Expiring today", value: summary?.expiring_today ?? 0, tone: "text-red-700" },
+    {
+      label: "Registered customers",
+      value: summary?.customers_total ?? 0,
+      tone: "text-slate-900",
+      chip: "bg-sky-50 text-sky-700 ring-sky-200",
+    },
+    {
+      label: "Docs generated today",
+      value: summary?.documents_generated_today ?? 0,
+      tone: "text-slate-900",
+      chip: "bg-indigo-50 text-indigo-700 ring-indigo-200",
+    },
+    {
+      label: "Expiring in 30 days",
+      value: summary?.expiring_in_30_days ?? 0,
+      tone: "text-amber-700",
+      chip: "bg-amber-50 text-amber-700 ring-amber-200",
+    },
+    {
+      label: "Expiring today",
+      value: summary?.expiring_today ?? 0,
+      tone: "text-red-700",
+      chip: "bg-red-50 text-red-700 ring-red-200",
+    },
   ];
+
+  function pendingTone(item: PendingItem): string {
+    if (item.days_until_expiration < 0) {
+      return "bg-red-50 text-red-700 ring-red-200";
+    }
+    if (item.days_until_expiration === 0) {
+      return "bg-amber-50 text-amber-700 ring-amber-200";
+    }
+    return "bg-sky-50 text-sky-700 ring-sky-200";
+  }
 
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-xl border border-zinc-200 bg-linear-to-r from-zinc-900 to-zinc-700 p-6 text-white">
-        <p className="text-xs uppercase tracking-[0.2em] text-zinc-300">Operations Dashboard</p>
+      <section className="relative overflow-hidden rounded-2xl border border-sky-100 bg-linear-to-r from-slate-900 via-blue-900 to-sky-900 p-6 text-white shadow-lg shadow-blue-950/20">
+        <div className="pointer-events-none absolute -right-14 -top-14 h-52 w-52 rounded-full bg-emerald-400/20 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-16 left-1/4 h-48 w-48 rounded-full bg-sky-300/20 blur-2xl" />
+        <p className="text-xs uppercase tracking-[0.2em] text-sky-100/80">Operations Dashboard</p>
         <h1 className="mt-2 text-2xl font-semibold md:text-3xl">NJMVC operations overview</h1>
-        <p className="mt-2 max-w-2xl text-sm text-zinc-200">
+        <p className="mt-2 max-w-2xl text-sm text-sky-100/90">
           Monitor customers, expiration tasks, and document generation in one dashboard.
         </p>
       </section>
@@ -160,8 +192,10 @@ export default function Home() {
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {metrics.map((metric) => (
-          <article key={metric.label} className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <p className="text-sm text-zinc-500">{metric.label}</p>
+          <article key={metric.label} className="rounded-xl border border-slate-200/70 bg-white/90 p-4 shadow-sm backdrop-blur-sm">
+            <span className={`inline-flex rounded-full px-2 py-1 text-[11px] font-semibold ring-1 ${metric.chip}`}>
+              {metric.label}
+            </span>
             <p className={`mt-3 text-3xl font-semibold ${metric.tone}`}>
               {loading ? "..." : metric.value}
             </p>
@@ -170,15 +204,15 @@ export default function Home() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-5">
-        <article className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm lg:col-span-2">
-          <h2 className="text-lg font-semibold text-zinc-900">Quick actions</h2>
-          <p className="mt-1 text-sm text-zinc-500">Shortcuts for the most common daily tasks.</p>
+        <article className="rounded-xl border border-slate-200/70 bg-white/90 p-5 shadow-sm backdrop-blur-sm lg:col-span-2">
+          <h2 className="text-lg font-semibold text-slate-900">Quick actions</h2>
+          <p className="mt-1 text-sm text-slate-500">Shortcuts for the most common daily tasks.</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
             {quickActions.map((action) => (
               <Link
                 key={action.label}
                 to={action.to}
-                className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50"
+                className={`rounded-lg bg-linear-to-r ${action.style} px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:brightness-110`}
               >
                 {action.label}
               </Link>
@@ -186,9 +220,9 @@ export default function Home() {
           </div>
         </article>
 
-        <article className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm lg:col-span-3">
-          <h2 className="text-lg font-semibold text-zinc-900">Priority pending items</h2>
-          <p className="mt-1 text-sm text-zinc-500">
+        <article className="rounded-xl border border-slate-200/70 bg-white/90 p-5 shadow-sm backdrop-blur-sm lg:col-span-3">
+          <h2 className="text-lg font-semibold text-slate-900">Priority pending items</h2>
+          <p className="mt-1 text-sm text-slate-500">
             Documents near expiration or already expired. Pending: {pending?.pending_count ?? 0} | Notified:{" "}
             {pending?.notified_count ?? 0}
           </p>
@@ -221,11 +255,13 @@ export default function Home() {
             {(pending?.items ?? []).map((item) => {
               const key = `${item.document_type}:${item.source_document_id}`;
               return (
-                <li key={key} className="rounded-lg border border-zinc-200 px-4 py-3">
+                <li key={key} className="rounded-lg border border-slate-200 px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-semibold text-zinc-800">{item.customer_name}</p>
-                      <p className="text-sm text-zinc-600">{pendingDetail(item)}</p>
+                      <p className="text-sm font-semibold text-slate-800">{item.customer_name}</p>
+                      <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ${pendingTone(item)}`}>
+                        {pendingDetail(item)}
+                      </span>
                     </div>
                     <button
                       type="button"
@@ -234,8 +270,8 @@ export default function Home() {
                       className={[
                         "rounded-md px-3 py-1.5 text-xs font-semibold",
                         item.notified
-                          ? "border border-zinc-300 text-zinc-700 hover:bg-zinc-50"
-                          : "bg-zinc-900 text-white hover:bg-zinc-800",
+                          ? "border border-slate-300 text-slate-700 hover:bg-slate-50"
+                          : "bg-linear-to-r from-sky-700 to-blue-700 text-white hover:brightness-110",
                       ].join(" ")}
                     >
                       {updatingKey === key

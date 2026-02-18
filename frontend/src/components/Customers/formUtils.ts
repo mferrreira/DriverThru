@@ -103,7 +103,75 @@ export function normalizeString(value: string): string | null {
 
 export function normalizeDate(value: string): string | null {
   const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
+  if (trimmed.length === 0) {
+    return null;
+  }
+
+  // Already normalized date input (<input type="date">)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  // Accept slash-delimited dates and normalize to YYYY-MM-DD for API payload.
+  // Supports either MM/DD/YYYY (US) or DD/MM/YYYY when day > 12.
+  const slashMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!slashMatch) {
+    return trimmed;
+  }
+
+  const first = Number(slashMatch[1]);
+  const second = Number(slashMatch[2]);
+  const year = Number(slashMatch[3]);
+  if (year < 1900 || year > 2100) {
+    return trimmed;
+  }
+
+  let month = first;
+  let day = second;
+  if (first > 12 && second <= 12) {
+    day = first;
+    month = second;
+  }
+
+  if (month < 1 || month > 12 || day < 1 || day > 31) {
+    return trimmed;
+  }
+
+  return `${year.toString().padStart(4, "0")}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+}
+
+export function formatDateForForm(value: string | null | undefined): string {
+  if (!value) {
+    return "";
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split("-");
+    return `${month}/${day}/${year}`;
+  }
+  return value;
+}
+
+export function normalizeEyeColor(value: string | null | undefined): string {
+  if (!value) {
+    return "";
+  }
+  const upper = value.trim().toUpperCase();
+  const legacyMap: Record<string, string> = {
+    BLACK: "BLK",
+    BLUE: "BLU",
+    BRO: "BRN",
+    BRN: "BRN",
+    BROWN: "BRN",
+    GREEN: "GRN",
+    GRAY: "GRY",
+    GREY: "GRY",
+    HAZEL: "HAZ",
+    MAROON: "MAR",
+    MULTICOLOR: "MUL",
+    HETEROCHROMIA: "MUL",
+    UNKNOWN: "XXX",
+  };
+  return legacyMap[upper] ?? upper;
 }
 
 export function fullName(c: CustomerListItem): string {

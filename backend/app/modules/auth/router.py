@@ -32,7 +32,8 @@ def login_route(payload: LoginRequest, response: Response) -> AuthUserResponse:
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout_route(response: Response) -> Response:
+def logout_route() -> Response:
+    response = Response(status_code=status.HTTP_204_NO_CONTENT)
     response.delete_cookie(
         key=settings.AUTH_COOKIE_NAME,
         httponly=True,
