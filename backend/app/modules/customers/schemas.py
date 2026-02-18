@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.modules.customers.models import (
     AddressType,
+    EyeColor,
     Gender,
     NJEndorsementCode,
     NJLicenseClass,
@@ -171,6 +172,7 @@ class CustomerBase(BaseModel):
 
 
 class CustomerCreate(CustomerBase):
+    eye_color: EyeColor | None = None
     addresses: list[CustomerAddressCreate] = Field(default_factory=list)
     nj_driver_licenses: list[NJDriverLicenseCreate] = Field(default_factory=list)
     brazil_driver_licenses: list[BrazilDriverLicenseCreate] = Field(default_factory=list)
@@ -189,7 +191,7 @@ class CustomerUpdate(BaseModel):
     has_no_ssn: bool | None = None
     ssn_encrypted: str | None = None
     gender: Gender | None = None
-    eye_color: str | None = Field(default=None, max_length=30)
+    eye_color: EyeColor | None = None
     weight_lbs: Decimal | None = Field(default=None, gt=0)
     height_feet: int | None = Field(default=None, ge=0, le=8)
     height_inches: int | None = Field(default=None, ge=0, le=11)

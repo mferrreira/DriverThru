@@ -6,12 +6,14 @@ from app.modules.auth.router import router as auth_router
 from app.modules.customers.router import router as customers_router
 from app.modules.dashboard.router import router as dashboard_router
 from app.modules.documents.router import router as documents_router
+from app.modules.reports.router import router as reports_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router)
 api_router.include_router(documents_router, dependencies=[Depends(get_current_user)])
 api_router.include_router(dashboard_router, dependencies=[Depends(get_current_user)])
 api_router.include_router(customers_router, dependencies=[Depends(get_current_user)])
+api_router.include_router(reports_router, dependencies=[Depends(get_current_user)])
 
 @api_router.get("/templates", include_in_schema=False, dependencies=[Depends(get_current_user)])
 def templates_alias() -> RedirectResponse:

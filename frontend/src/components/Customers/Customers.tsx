@@ -1,22 +1,23 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
 import { apiFetch } from "../../lib/api";
+import {
+  defaultBrazilForm,
+  defaultNJForm,
+  defaultPassportForm,
+  normalizeDate,
+  normalizeString,
+} from "./formUtils";
+import { useCustomerCore } from "./hooks/useCustomerCore";
 import CustomersSidebar from "./CustomersSidebar";
-import { defaultBrazilForm, defaultCustomerForm, defaultNJForm, defaultPassportForm, mapAddressForm, normalizeDate, normalizeString } from "./formUtils";
 import BrazilLicensesSection from "./sections/BrazilLicensesSection";
 import CustomerCoreSection from "./sections/CustomerCoreSection";
 import NJLicensesSection from "./sections/NJLicensesSection";
 import PassportsSection from "./sections/PassportsSection";
 import type {
-  AddressForm,
-  AddressType,
   BrazilDriverLicense,
   BrazilForm,
-  CustomerForm,
-  CustomerListItem,
-  CustomerListResponse,
-  CustomerRead,
   NJDriverLicense,
   NJEndorsement,
   NJForm,
@@ -26,16 +27,31 @@ import type {
 } from "./types";
 
 export default function Customers() {
-  const [customers, setCustomers] = useState<CustomerListItem[]>([]);
-  const [search, setSearch] = useState("");
-  const [loadingList, setLoadingList] = useState(true);
-  const [savingCustomer, setSavingCustomer] = useState(false);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
-  const [selectedCustomer, setSelectedCustomer] = useState<CustomerRead | null>(null);
-  const [customerForm, setCustomerForm] = useState<CustomerForm>(defaultCustomerForm);
-  const [customerMode, setCustomerMode] = useState<"create" | "edit">("create");
-  const [customerError, setCustomerError] = useState<string | null>(null);
-  const [listError, setListError] = useState<string | null>(null);
+  const {
+    customers,
+    search,
+    setSearch,
+    loadingList,
+    listError,
+    selectedCustomerId,
+    selectedCustomer,
+    selectedCustomerName,
+    customerForm,
+    setCustomerForm,
+    customerMode,
+    customerError,
+    customerSuccess,
+    savingCustomer,
+    customerPhotoUrl,
+    uploadingPhoto,
+    photoError,
+    loadCustomers,
+    handleSelectCustomer,
+    beginCreateCustomer,
+    submitCustomer,
+    deactivateCustomer,
+    uploadCustomerPhoto,
+  } = useCustomerCore();
 
   const [njForm, setNjForm] = useState<NJForm>(defaultNJForm);
   const [njMode, setNjMode] = useState<"create" | "edit" | "renew">("create");
@@ -55,227 +71,22 @@ export default function Customers() {
   const [savingPassport, setSavingPassport] = useState(false);
   const [passportError, setPassportError] = useState<string | null>(null);
 
-  const selectedCustomerName = useMemo(() => {
-    if (!selectedCustomer) {
-      return "";
-    }
-    return `${selectedCustomer.first_name} ${selectedCustomer.last_name}`.trim();
-  }, [selectedCustomer]);
-
   useEffect(() => {
-    void loadCustomers();
-  }, []);
+    setNjMode("create");
+    setNjForm(defaultNJForm());
+    setEditingNjId(null);
+    setNjError(null);
 
-  async function loadCustomers() {
-    setLoadingList(true);
-    setListError(null);
-    try {
-      const query = search.trim();
-      const suffix = query ? `?search=${encodeURIComponent(query)}` : "";
-      const response = await apiFetch(`/customers${suffix}`);
-      if (!response.ok) {
-        throw new Error(`Failed to list customers: ${response.status}`);
-      }
-      const data = (await response.json()) as CustomerListResponse;
-      setCustomers(data.items);
-      if (!selectedCustomerId && data.items.length > 0) {
-        void handleSelectCustomer(data.items[0].id);
-      }
-      if (selectedCustomerId && !data.items.some((item) => item.id === selectedCustomerId)) {
-        setSelectedCustomerId(null);
-        setSelectedCustomer(null);
-        setCustomerMode("create");
-        setCustomerForm(defaultCustomerForm());
-      }
-    } catch {
-      setListError("Could not load customers.");
-    } finally {
-      setLoadingList(false);
-    }
-  }
+    setBrMode("create");
+    setBrForm(defaultBrazilForm());
+    setEditingBrId(null);
+    setBrError(null);
 
-  async function handleSelectCustomer(customerId: number) {
-    setSelectedCustomerId(customerId);
-    setCustomerError(null);
-    try {
-      const response = await apiFetch(`/customers/${customerId}`);
-      if (!response.ok) {
-        throw new Error(`Failed to load customer: ${response.status}`);
-      }
-      const data = (await response.json()) as CustomerRead;
-      setSelectedCustomer(data);
-      setCustomerMode("edit");
-      setCustomerForm({
-        customer_photo_object_key: data.customer_photo_object_key ?? "",
-        first_name: data.first_name,
-        middle_name: data.middle_name ?? "",
-        last_name: data.last_name,
-        suffix: data.suffix ?? "",
-        phone_number: data.phone_number ?? "",
-        email: data.email ?? "",
-        date_of_birth: data.date_of_birth ?? "",
-        has_no_ssn: data.has_no_ssn,
-        ssn_encrypted: data.ssn_encrypted ?? "",
-        gender: data.gender ?? "",
-        eye_color: data.eye_color ?? "",
-        weight_lbs: data.weight_lbs ?? "",
-        height_feet: data.height_feet?.toString() ?? "",
-        height_inches: data.height_inches?.toString() ?? "",
-        residential: mapAddressForm(data.addresses, "residential"),
-        mailing: mapAddressForm(data.addresses, "mailing"),
-        out_of_state: mapAddressForm(data.addresses, "out_of_state"),
-      });
-      setNjMode("create");
-      setNjForm(defaultNJForm());
-      setEditingNjId(null);
-      setBrMode("create");
-      setBrForm(defaultBrazilForm());
-      setEditingBrId(null);
-      setPassportMode("create");
-      setPassportForm(defaultPassportForm());
-      setEditingPassportId(null);
-    } catch {
-      setCustomerError("Could not load customer details.");
-    }
-  }
-
-  function beginCreateCustomer() {
-    setSelectedCustomerId(null);
-    setSelectedCustomer(null);
-    setCustomerMode("create");
-    setCustomerForm(defaultCustomerForm());
-    setCustomerError(null);
-  }
-
-  function parseAddressesFromForm(form: CustomerForm): Array<Record<string, string>> {
-    const output: Array<Record<string, string>> = [];
-    const entries: Array<{ type: AddressType; value: AddressForm }> = [
-      { type: "residential", value: form.residential },
-      { type: "mailing", value: form.mailing },
-      { type: "out_of_state", value: form.out_of_state },
-    ];
-
-    for (const entry of entries) {
-      const hasAnyValue =
-        entry.value.street.trim() ||
-        entry.value.apt.trim() ||
-        entry.value.city.trim() ||
-        entry.value.state.trim() ||
-        entry.value.zip_code.trim() ||
-        entry.value.county.trim();
-
-      if (!hasAnyValue) {
-        continue;
-      }
-
-      if (!entry.value.street.trim() || !entry.value.city.trim() || !entry.value.state.trim() || !entry.value.zip_code.trim()) {
-        throw new Error(`Address ${entry.type} is incomplete. Provide street/city/state/zip.`);
-      }
-      const normalizedState = entry.value.state.trim().toUpperCase();
-      if (normalizedState.length !== 2) {
-        throw new Error(`Address ${entry.type}: state must be 2 characters (e.g. NJ).`);
-      }
-
-      output.push({
-        address_type: entry.type,
-        street: entry.value.street.trim(),
-        apt: entry.value.apt.trim(),
-        city: entry.value.city.trim(),
-        state: normalizedState,
-        zip_code: entry.value.zip_code.trim(),
-        county: entry.value.county.trim(),
-      });
-    }
-    return output;
-  }
-
-  async function submitCustomer(event: FormEvent) {
-    event.preventDefault();
-    setSavingCustomer(true);
-    setCustomerError(null);
-
-    try {
-      const addresses = parseAddressesFromForm(customerForm);
-      const normalizedWeight = customerForm.weight_lbs.replace(",", ".");
-      const heightFeet = customerForm.height_feet ? Number(customerForm.height_feet) : null;
-      const heightInches = customerForm.height_inches ? Number(customerForm.height_inches) : null;
-      if (heightFeet !== null && (heightFeet < 0 || heightFeet > 8)) {
-        throw new Error("Height (feet) must be between 0 and 8.");
-      }
-      if (heightInches !== null && (heightInches < 0 || heightInches > 11)) {
-        throw new Error("Height (inches) must be between 0 and 11.");
-      }
-      const payload = {
-        customer_photo_object_key: normalizeString(customerForm.customer_photo_object_key),
-        first_name: customerForm.first_name.trim(),
-        middle_name: normalizeString(customerForm.middle_name),
-        last_name: customerForm.last_name.trim(),
-        suffix: normalizeString(customerForm.suffix),
-        phone_number: normalizeString(customerForm.phone_number),
-        email: normalizeString(customerForm.email),
-        date_of_birth: customerForm.date_of_birth,
-        has_no_ssn: customerForm.has_no_ssn,
-        ssn_encrypted: customerForm.has_no_ssn ? null : normalizeString(customerForm.ssn_encrypted),
-        gender: customerForm.gender || null,
-        eye_color: normalizeString(customerForm.eye_color),
-        weight_lbs: normalizeString(normalizedWeight),
-        height_feet: heightFeet,
-        height_inches: heightInches,
-        addresses,
-      };
-
-      const path = customerMode === "create" ? "/customers" : `/customers/${selectedCustomerId}`;
-      const method = customerMode === "create" ? "POST" : "PATCH";
-      const response = await apiFetch(path, {
-        method,
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        let backendMessage = `Failed to save customer: ${response.status}`;
-        try {
-          const data = (await response.json()) as { detail?: unknown };
-          if (typeof data.detail === "string") {
-            backendMessage = data.detail;
-          } else if (Array.isArray(data.detail) && data.detail.length > 0) {
-            const first = data.detail[0] as { loc?: unknown[]; msg?: string };
-            const loc = Array.isArray(first.loc) ? first.loc.join(".") : "payload";
-            backendMessage = `${loc}: ${first.msg ?? "validation error"}`;
-          }
-        } catch {
-          // Keep default message.
-        }
-        throw new Error(backendMessage);
-      }
-
-      const saved = (await response.json()) as CustomerRead;
-      await loadCustomers();
-      await handleSelectCustomer(saved.id);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to save customer.";
-      setCustomerError(message);
-    } finally {
-      setSavingCustomer(false);
-    }
-  }
-
-  async function deactivateCustomer(customerId: number) {
-    const ok = window.confirm("Deactivate this customer?");
-    if (!ok) {
-      return;
-    }
-
-    const response = await apiFetch(`/customers/${customerId}`, { method: "DELETE" });
-    if (!response.ok) {
-      setCustomerError("Could not deactivate customer.");
-      return;
-    }
-    setSelectedCustomer(null);
-    setSelectedCustomerId(null);
-    setCustomerMode("create");
-    setCustomerForm(defaultCustomerForm());
-    await loadCustomers();
-  }
+    setPassportMode("create");
+    setPassportForm(defaultPassportForm());
+    setEditingPassportId(null);
+    setPassportError(null);
+  }, [selectedCustomerId]);
 
   function hydrateNjForm(item: NJDriverLicense) {
     setNjForm({
@@ -349,6 +160,28 @@ export default function Customers() {
     await handleSelectCustomer(selectedCustomerId);
   }
 
+  function hydrateBrazilForm(item: BrazilDriverLicense) {
+    setBrForm({
+      full_name: item.full_name,
+      identity_number: item.identity_number ?? "",
+      issuing_agency: item.issuing_agency ?? "",
+      issuing_state: item.issuing_state ?? "",
+      cpf_encrypted: item.cpf_encrypted ?? "",
+      father_name: item.father_name ?? "",
+      mother_name: item.mother_name ?? "",
+      category: item.category ?? "",
+      registry_number: item.registry_number ?? "",
+      expiration_date: item.expiration_date ?? "",
+      first_license_date: item.first_license_date ?? "",
+      observations: item.observations ?? "",
+      issue_place: item.issue_place ?? "",
+      issue_date: item.issue_date ?? "",
+      paper_number: item.paper_number ?? "",
+      issue_code: item.issue_code ?? "",
+      is_current: item.is_current,
+    });
+  }
+
   async function submitBrazil(event: FormEvent) {
     event.preventDefault();
     if (!selectedCustomerId) {
@@ -398,28 +231,6 @@ export default function Customers() {
     } finally {
       setSavingBr(false);
     }
-  }
-
-  function hydrateBrazilForm(item: BrazilDriverLicense) {
-    setBrForm({
-      full_name: item.full_name,
-      identity_number: item.identity_number ?? "",
-      issuing_agency: item.issuing_agency ?? "",
-      issuing_state: item.issuing_state ?? "",
-      cpf_encrypted: item.cpf_encrypted ?? "",
-      father_name: item.father_name ?? "",
-      mother_name: item.mother_name ?? "",
-      category: item.category ?? "",
-      registry_number: item.registry_number ?? "",
-      expiration_date: item.expiration_date ?? "",
-      first_license_date: item.first_license_date ?? "",
-      observations: item.observations ?? "",
-      issue_place: item.issue_place ?? "",
-      issue_date: item.issue_date ?? "",
-      paper_number: item.paper_number ?? "",
-      issue_code: item.issue_code ?? "",
-      is_current: item.is_current,
-    });
   }
 
   async function deactivateBrazil(licenseId: number) {
@@ -565,9 +376,14 @@ export default function Customers() {
           customerForm={customerForm}
           setCustomerForm={setCustomerForm}
           customerError={customerError}
+          customerSuccess={customerSuccess}
           savingCustomer={savingCustomer}
+          customerPhotoUrl={customerPhotoUrl}
+          uploadingPhoto={uploadingPhoto}
+          photoError={photoError}
           onSubmit={(event) => void submitCustomer(event)}
           onDeactivate={(customerId) => void deactivateCustomer(customerId)}
+          onUploadPhoto={(file) => void uploadCustomerPhoto(file)}
         />
 
         <NJLicensesSection

@@ -53,7 +53,12 @@ def generate_document(
         values.update(field_overrides)
 
     payload, matched_fields, total_template_fields = render_template_pdf(template_key=template_key, values=values)
-    object_key, generated_at = save_generated_document(customer_id=customer.id, template_key=template_key, payload=payload)
+    object_key, generated_at = save_generated_document(
+        customer_id=customer.id,
+        customer_name=f"{customer.first_name} {customer.last_name}",
+        template_key=template_key,
+        payload=payload,
+    )
 
     return GenerateDocumentResponse(
         template_key=template_key,

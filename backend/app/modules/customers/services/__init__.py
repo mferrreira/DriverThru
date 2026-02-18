@@ -23,6 +23,7 @@ from .passports import (
     renew_passport,
     update_passport,
 )
+from .photos import get_customer_photo, upload_customer_photo
 
 __all__ = [
     "create_brazil_license",
@@ -35,6 +36,7 @@ __all__ = [
     "deactivate_passport",
     "get_brazil_license_or_404",
     "get_customer_or_404",
+    "get_customer_photo",
     "get_nj_license_or_404",
     "get_passport_or_404",
     "list_brazil_licenses",
@@ -48,4 +50,5 @@ __all__ = [
     "update_customer",
     "update_nj_license",
     "update_passport",
+    "upload_customer_photo",
 ]

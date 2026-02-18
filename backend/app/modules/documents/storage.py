@@ -4,6 +4,8 @@ from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path
 import re
+import unicodedata
+from uuid import uuid4
 
 from minio.error import S3Error
 
@@ -13,12 +15,19 @@ from app.modules.documents.errors import DocumentNotFoundError
 from app.modules.documents.schemas import GeneratedDocumentItem, GeneratedDocumentListResponse, TemplateKey
 
 
-def save_generated_document(customer_id: int, template_key: TemplateKey, payload: bytes) -> tuple[str, datetime]:
+def save_generated_document(
+    customer_id: int,
+    customer_name: str,
+    template_key: TemplateKey,
+    payload: bytes,
+) -> tuple[str, datetime]:
     now = datetime.now(UTC)
+    customer_slug = _slugify_filename_part(customer_name, fallback=f"customer{customer_id}")
+    token = uuid4().hex[:8]
     object_key = (
         f"{settings.GENERATED_DOCUMENTS_PREFIX}/"
         f"{customer_id}/"
-        f"{template_key}_{now.strftime('%Y%m%d_%H%M%S')}.pdf"
+        f"{template_key}_{customer_slug}_{token}.pdf"
     )
     client = get_minio_client()
     client.put_object(
@@ -93,16 +102,37 @@ def list_generated_documents(
 
 
 def _parse_generated_key(object_key: str) -> tuple[int | None, TemplateKey | None, datetime | None]:
-    pattern = re.compile(
+    legacy_pattern = re.compile(
         rf"^{re.escape(settings.GENERATED_DOCUMENTS_PREFIX)}/(?P<customer_id>\d+)/"
         r"(?P<template_key>affidavit|ba208)_(?P<stamp>\d{8}_\d{6})\.pdf$"
     )
-    match = pattern.match(object_key)
-    if not match:
+    legacy_match = legacy_pattern.match(object_key)
+    if legacy_match:
+        customer = int(legacy_match.group("customer_id"))
+        raw_template = legacy_match.group("template_key")
+        parsed_template: TemplateKey = "affidavit" if raw_template == "affidavit" else "ba208"
+        stamp = legacy_match.group("stamp")
+        parsed = datetime.strptime(stamp, "%Y%m%d_%H%M%S").replace(tzinfo=UTC)
+        return customer, parsed_template, parsed
+
+    name_pattern = re.compile(
+        rf"^{re.escape(settings.GENERATED_DOCUMENTS_PREFIX)}/(?P<customer_id>\d+)/"
+        r"(?P<template_key>affidavit|ba208)_[a-z0-9_]+_[a-f0-9]{8}\.pdf$"
+    )
+    name_match = name_pattern.match(object_key)
+    if not name_match:
         return None, None, None
-    customer = int(match.group("customer_id"))
-    raw_template = match.group("template_key")
+    customer = int(name_match.group("customer_id"))
+    raw_template = name_match.group("template_key")
     parsed_template: TemplateKey = "affidavit" if raw_template == "affidavit" else "ba208"
-    stamp = match.group("stamp")
-    parsed = datetime.strptime(stamp, "%Y%m%d_%H%M%S").replace(tzinfo=UTC)
-    return customer, parsed_template, parsed
+    return customer, parsed_template, None
+
+
+def _slugify_filename_part(value: str, fallback: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value or "")
+    ascii_only = normalized.encode("ascii", "ignore").decode("ascii")
+    lowered = ascii_only.lower()
+    slug = re.sub(r"[^a-z0-9]+", "_", lowered).strip("_")
+    if not slug:
+        slug = fallback
+    return slug[:40]

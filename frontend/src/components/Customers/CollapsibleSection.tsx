@@ -14,7 +14,7 @@ export default function CollapsibleSection({
   children,
 }: CollapsibleSectionProps) {
   return (
-    <details className="rounded-lg border border-slate-200 bg-linear-to-r from-slate-50 to-sky-50/60 p-3" open={defaultOpen}>
+    <details className="rounded-lg border my-4 border-slate-200 bg-linear-to-r from-slate-50 to-sky-50/60 p-3" open={defaultOpen}>
       <summary className="cursor-pointer list-none">
         <div className="flex items-center justify-between gap-3">
           <div>

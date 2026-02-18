@@ -87,7 +87,7 @@ docker compose exec backend alembic upgrade head
 
 When running on host, `DATABASE_URL` must point to a locally reachable DB (`localhost`), not `db` (Docker internal hostname).
 
-## Default Users
+## Auth Users
 
 Configured via `AUTH_USERS_JSON` in `backend/app/core/config.py`:
 
@@ -95,6 +95,17 @@ Configured via `AUTH_USERS_JSON` in `backend/app/core/config.py`:
 - `operator` / `operator123`
 
 Change this in `.env` for production.
+
+### Create/Update User via CLI
+
+Use the helper script to add or rotate users with Argon2-hashed passwords:
+
+```bash
+cd backend
+python scripts/create_auth_user.py --username manager --role admin --write-env ../.env
+```
+
+If you omit `--write-env`, the script prints the `AUTH_USERS_JSON=...` value so you can use it elsewhere.
 
 ## PDF Templates
 

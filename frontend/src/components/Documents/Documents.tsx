@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 
 import { apiFetch } from "../../lib/api";
+import { formatDateTimeUS } from "../../lib/utils";
 
 type CustomerListItem = {
   id: number;
@@ -309,6 +310,14 @@ export default function Documents() {
     }
     return `${result.matched_fields}/${result.total_template_fields}`;
   }, [result]);
+
+  const customerNameById = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const item of customers) {
+      map.set(item.id, `${item.first_name} ${item.last_name}`.trim());
+    }
+    return map;
+  }, [customers]);
 
   function setOverrideValue(fieldName: string, value: string) {
     setFieldOverrides((prev) => {
@@ -815,7 +824,7 @@ export default function Documents() {
               <span className="font-medium">Matched fields:</span> {matchedInfo}
             </p>
             <p>
-              <span className="font-medium">Generated at:</span> {new Date(result.generated_at).toLocaleString()}
+              <span className="font-medium">Generated at:</span> {formatDateTimeUS(result.generated_at)}
             </p>
           </div>
         </section>
@@ -866,10 +875,18 @@ export default function Documents() {
                 ? generatedItems.map((item) => (
                     <tr key={item.object_key} className="border-b border-zinc-100">
                       <td className="px-2 py-2 text-zinc-800">{item.file_name}</td>
-                      <td className="px-2 py-2 text-zinc-700">{item.customer_id ?? "-"}</td>
+                      <td className="px-2 py-2 text-zinc-700">
+                        {item.customer_id !== null
+                          ? (customerNameById.get(item.customer_id) ?? `#${item.customer_id}`)
+                          : "-"}
+                      </td>
                       <td className="px-2 py-2 text-zinc-700">{item.template_key ?? "-"}</td>
                       <td className="px-2 py-2 text-zinc-700">
-                        {item.generated_at ? new Date(item.generated_at).toLocaleString() : item.last_modified ? new Date(item.last_modified).toLocaleString() : "-"}
+                        {item.generated_at
+                          ? formatDateTimeUS(item.generated_at)
+                          : item.last_modified
+                            ? formatDateTimeUS(item.last_modified)
+                            : "-"}
                       </td>
                       <td className="px-2 py-2">
                         <button

@@ -16,6 +16,18 @@ class Gender(str, enum.Enum):
     UNDISCLOSED = "undisclosed"
 
 
+class EyeColor(str, enum.Enum):
+    BLK = "BLK"
+    BLU = "BLU"
+    BRN = "BRN"
+    GRN = "GRN"
+    GRY = "GRY"
+    HAZ = "HAZ"
+    MAR = "MAR"
+    MUL = "MUL"
+    XXX = "XXX"
+
+
 class NJLicenseClass(str, enum.Enum):
     A = "A"
     B = "B"

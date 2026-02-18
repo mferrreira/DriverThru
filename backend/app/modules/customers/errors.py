@@ -11,3 +11,7 @@ class LicenseNotFoundError(ValueError):
 
 class PassportNotFoundError(ValueError):
     pass
+
+
+class CustomerPhotoNotFoundError(ValueError):
+    pass

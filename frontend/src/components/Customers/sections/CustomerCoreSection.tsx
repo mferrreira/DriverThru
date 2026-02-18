@@ -3,6 +3,7 @@ import type { Dispatch, FormEvent, SetStateAction } from "react";
 import CollapsibleSection from "../CollapsibleSection";
 import { eyeColorOptions, genderOptions } from "../constants";
 import type { AddressType, CustomerForm } from "../types";
+import CustomerPhotoField from "./CustomerPhotoField";
 
 type CustomerCoreSectionProps = {
   customerMode: "create" | "edit";
@@ -11,9 +12,14 @@ type CustomerCoreSectionProps = {
   customerForm: CustomerForm;
   setCustomerForm: Dispatch<SetStateAction<CustomerForm>>;
   customerError: string | null;
+  customerSuccess: string | null;
   savingCustomer: boolean;
+  customerPhotoUrl: string | null;
+  uploadingPhoto: boolean;
+  photoError: string | null;
   onSubmit: (event: FormEvent) => void;
   onDeactivate: (customerId: number) => void;
+  onUploadPhoto: (file: File) => void;
 };
 
 export default function CustomerCoreSection({
@@ -23,9 +29,14 @@ export default function CustomerCoreSection({
   customerForm,
   setCustomerForm,
   customerError,
+  customerSuccess,
   savingCustomer,
+  customerPhotoUrl,
+  uploadingPhoto,
+  photoError,
   onSubmit,
   onDeactivate,
+  onUploadPhoto,
 }: CustomerCoreSectionProps) {
   return (
     <section className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm backdrop-blur-sm">
@@ -46,9 +57,18 @@ export default function CustomerCoreSection({
       <CollapsibleSection
         title="Customer data"
         subtitle="Expand to create/edit core customer data and addresses"
-        defaultOpen
+
       >
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form onSubmit={onSubmit} className="space-y-4 py-2">
+          <CustomerPhotoField
+            selectedCustomerId={selectedCustomerId}
+            hasPhoto={Boolean(customerForm.customer_photo_object_key)}
+            photoUrl={customerPhotoUrl}
+            uploadingPhoto={uploadingPhoto}
+            photoError={photoError}
+            onUpload={onUploadPhoto}
+          />
+
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-sm">
               First name *
@@ -88,7 +108,8 @@ export default function CustomerCoreSection({
               Date of birth *
               <input
                 required
-                type="date"
+                type="text"
+                placeholder="MM/DD/YYYY"
                 value={customerForm.date_of_birth}
                 onChange={(event) => setCustomerForm((prev) => ({ ...prev, date_of_birth: event.target.value }))}
                 className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
@@ -112,16 +133,18 @@ export default function CustomerCoreSection({
               </select>
             </label>
             <label className="text-sm">
-              Eye color
+              Eye color (COLOR/CLR)
               <select
                 value={customerForm.eye_color}
-                onChange={(event) => setCustomerForm((prev) => ({ ...prev, eye_color: event.target.value }))}
+                onChange={(event) =>
+                  setCustomerForm((prev) => ({ ...prev, eye_color: event.target.value as CustomerForm["eye_color"] }))
+                }
                 className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
               >
                 <option value="">Select</option>
                 {eyeColorOptions.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
+                  <option key={item.value} value={item.value}>
+                    {item.label}
                   </option>
                 ))}
               </select>
@@ -297,6 +320,7 @@ export default function CustomerCoreSection({
           })}
 
           {customerError ? <p className="text-sm text-red-600">{customerError}</p> : null}
+          {customerSuccess ? <p className="text-sm text-emerald-700">{customerSuccess}</p> : null}
           <button
             type="submit"
             disabled={savingCustomer}
