@@ -89,12 +89,8 @@ When running on host, `DATABASE_URL` must point to a locally reachable DB (`loca
 
 ## Auth Users
 
-Configured via `AUTH_USERS_JSON` in `backend/app/core/config.py`:
-
-- `admin` / `admin123`
-- `operator` / `operator123`
-
-Change this in `.env` for production.
+Configured via `AUTH_USERS_JSON` in `.env` (required).
+Do not use default/demo credentials in production.
 
 ### Create/Update User via CLI
 
