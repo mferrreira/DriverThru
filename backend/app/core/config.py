@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     APP_DEBUG: bool = False
     LOG_LEVEL: str = "INFO"
+    API_ROOT_PATH: str = "/api"
 
     DATABASE_URL: str
     SQLALCHEMY_ECHO: bool = False
@@ -14,6 +15,7 @@ class Settings(BaseSettings):
     MINIO_ROOT_PASSWORD: str
     MINIO_BUCKET: str
     MINIO_SECURE: bool = False
+    MINIO_STARTUP_STRICT: bool = False
     DOCUMENTS_DIR: str = "../documents"
     GENERATED_DOCUMENTS_PREFIX: str = "generated-documents"
     JWT_SECRET_KEY: str = "change-me-in-production"
