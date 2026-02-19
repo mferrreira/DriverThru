@@ -20,6 +20,7 @@ from app.modules.documents.service import (
     DocumentNotFoundError,
     InvalidSelectionError,
     TemplateNotFoundError,
+    delete_generated_document,
     download_generated_document,
     generate_document,
     list_generated_documents,
@@ -106,6 +107,15 @@ def download_document(object_key: str = Query(..., min_length=1)) -> StreamingRe
 def list_generated_documents_route(
     customer_id: int | None = Query(default=None, ge=1),
     template_key: TemplateKey | None = Query(default=None),
+    offset: int = Query(default=0, ge=0),
     limit: int = Query(default=200, ge=1, le=1000),
 ) -> GeneratedDocumentListResponse:
-    return list_generated_documents(customer_id=customer_id, template_key=template_key, limit=limit)
+    return list_generated_documents(customer_id=customer_id, template_key=template_key, offset=offset, limit=limit)
+
+
+@router.delete("/generated", status_code=status.HTTP_204_NO_CONTENT)
+def delete_generated_document_route(object_key: str = Query(..., min_length=1)) -> None:
+    try:
+        delete_generated_document(object_key)
+    except DocumentNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc

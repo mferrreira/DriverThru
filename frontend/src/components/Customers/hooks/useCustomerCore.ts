@@ -31,7 +31,7 @@ type UseCustomerCoreResult = {
   customerPhotoUrl: string | null;
   uploadingPhoto: boolean;
   photoError: string | null;
-  loadCustomers: () => Promise<void>;
+  loadCustomers: (queryOverride?: string) => Promise<void>;
   handleSelectCustomer: (customerId: number) => Promise<void>;
   beginCreateCustomer: () => void;
   submitCustomer: (event: FormEvent) => Promise<void>;
@@ -75,11 +75,11 @@ export function useCustomerCore(): UseCustomerCoreResult {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function loadCustomers() {
+  async function loadCustomers(queryOverride?: string) {
     setLoadingList(true);
     setListError(null);
     try {
-      const query = search.trim();
+      const query = (queryOverride ?? search).trim();
       const suffix = query ? `?search=${encodeURIComponent(query)}` : "";
       const response = await apiFetch(`/customers${suffix}`);
       if (!response.ok) {

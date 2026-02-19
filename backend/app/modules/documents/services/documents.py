@@ -20,6 +20,7 @@ from app.modules.documents.schemas import (
     TemplateKey,
 )
 from app.modules.documents.storage import (
+    delete_generated_document as storage_delete_generated_document,
     download_generated_document as storage_download_generated_document,
     list_generated_documents as storage_list_generated_documents,
     save_generated_document,
@@ -99,9 +100,14 @@ def download_generated_document(object_key: str) -> tuple[bytes, str]:
 def list_generated_documents(
     customer_id: int | None = None,
     template_key: TemplateKey | None = None,
+    offset: int = 0,
     limit: int = 200,
 ) -> GeneratedDocumentListResponse:
-    return storage_list_generated_documents(customer_id=customer_id, template_key=template_key, limit=limit)
+    return storage_list_generated_documents(customer_id=customer_id, template_key=template_key, offset=offset, limit=limit)
+
+
+def delete_generated_document(object_key: str) -> None:
+    storage_delete_generated_document(object_key)
 
 
 __all__ = [
@@ -110,6 +116,7 @@ __all__ = [
     "InvalidSelectionError",
     "TemplateNotFoundError",
     "download_generated_document",
+    "delete_generated_document",
     "generate_document",
     "list_generated_documents",
     "list_template_fields",

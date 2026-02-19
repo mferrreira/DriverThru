@@ -61,8 +61,11 @@ def download_generated_document(object_key: str) -> tuple[bytes, str]:
 def list_generated_documents(
     customer_id: int | None = None,
     template_key: TemplateKey | None = None,
+    offset: int = 0,
     limit: int = 200,
 ) -> GeneratedDocumentListResponse:
+    if offset < 0:
+        offset = 0
     if limit <= 0:
         limit = 200
     if limit > 1000:
@@ -98,7 +101,17 @@ def list_generated_documents(
         )
 
     items.sort(key=lambda item: item.generated_at or item.last_modified or datetime.min.replace(tzinfo=UTC), reverse=True)
-    return GeneratedDocumentListResponse(items=items[:limit], total=len(items))
+    return GeneratedDocumentListResponse(items=items[offset : offset + limit], total=len(items))
+
+
+def delete_generated_document(object_key: str) -> None:
+    if not object_key.startswith(f"{settings.GENERATED_DOCUMENTS_PREFIX}/"):
+        raise DocumentNotFoundError("Unsupported document path")
+    client = get_minio_client()
+    try:
+        client.remove_object(settings.MINIO_BUCKET, object_key)
+    except S3Error as exc:
+        raise DocumentNotFoundError(f"Document not found: {object_key}") from exc
 
 
 def _parse_generated_key(object_key: str) -> tuple[int | None, TemplateKey | None, datetime | None]:
