@@ -11,7 +11,7 @@ __pycache__/
 .coverage
 .coverage.*
 htmlcov/
-
+**/backups/*.sql
 # frontend
 logs
 *.log

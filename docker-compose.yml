@@ -64,6 +64,26 @@ services:
     networks:
       - driverthru_net
 
+  db-backup:
+    image: postgres:16-alpine
+    container_name: driverthru-db-backup
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      BACKUP_INTERVAL_SECONDS: "86400"
+      BACKUP_KEEP_FILES: "15"
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./postgres/backups:/backups
+      - ./postgres/backup.sh:/scripts/backup.sh:ro
+    command: ["/bin/sh", "/scripts/backup.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - driverthru_net
+
   minio:
     image: minio/minio
     container_name: driverthru-minio
