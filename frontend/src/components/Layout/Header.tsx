@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../../auth/AuthProvider";
+import logo from "../../assets/LOGO.png";
 import { Button } from "../ui/button";
 
 const navItems = [
@@ -30,9 +31,7 @@ export default function Header() {
     <header className="sticky top-0 z-30 border-b border-sky-100/80 bg-white/90 backdrop-blur">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="grid h-9 w-9 place-items-center rounded-md bg-linear-to-br from-emerald-500 via-teal-500 to-blue-600 text-xs font-bold text-white shadow-sm">
-            DT
-          </div>
+          <img src={logo} alt="DriverThru logo" className="h-10 w-10 object-contain" />
           <div>
             <p className="text-sm font-semibold leading-4 text-slate-900">DriverThru</p>
             <p className="text-xs text-slate-500">NJMVC Operations</p>
