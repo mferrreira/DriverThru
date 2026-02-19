@@ -3,17 +3,14 @@ from __future__ import annotations
 import argparse
 import getpass
 import json
+import os
 from pathlib import Path
 import re
 import sys
 
-CURRENT_DIR = Path(__file__).resolve().parent
-BACKEND_ROOT = CURRENT_DIR.parent
-if str(BACKEND_ROOT) not in sys.path:
-    sys.path.insert(0, str(BACKEND_ROOT))
+from argon2 import PasswordHasher
 
-from app.core.config import settings
-from app.core.security import password_hasher
+password_hasher = PasswordHasher()
 
 
 def parse_args() -> argparse.Namespace:
@@ -28,14 +25,26 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--write-env",
         default=None,
-        help="Optional path to .env file to update AUTH_USERS_JSON in place.",
+        help="Path to .env file to update AUTH_USERS_JSON in place (default: backend/../.env).",
+    )
+    parser.add_argument(
+        "--print-only",
+        action="store_true",
+        help="Only print AUTH_USERS_JSON result; do not write .env.",
     )
     return parser.parse_args()
 
 
-def load_users() -> list[dict[str, str]]:
+def resolve_env_path(raw_path: str | None) -> Path:
+    if raw_path:
+        return Path(raw_path).expanduser().resolve()
+    return (Path(__file__).resolve().parent.parent / ".." / ".env").resolve()
+
+
+def load_users(env_path: Path) -> list[dict[str, str]]:
+    auth_json = _read_auth_users_json(env_path)
     try:
-        raw = json.loads(settings.AUTH_USERS_JSON)
+        raw = json.loads(auth_json)
     except json.JSONDecodeError as exc:
         raise ValueError("AUTH_USERS_JSON is not valid JSON.") from exc
     if not isinstance(raw, list):
@@ -74,6 +83,21 @@ def render_auth_users_json(users: list[dict[str, str]]) -> str:
     return json.dumps(users, ensure_ascii=True, separators=(",", ":"))
 
 
+def _read_auth_users_json(env_path: Path) -> str:
+    if env_path.exists():
+        content = env_path.read_text(encoding="utf-8")
+        match = re.search(r"^AUTH_USERS_JSON=(.*)$", content, flags=re.MULTILINE)
+        if match:
+            return match.group(1).strip()
+
+    env_value = os.getenv("AUTH_USERS_JSON", "").strip()
+    if env_value:
+        return env_value
+
+    # Safe default when no config exists yet.
+    return "[]"
+
+
 def write_env_file(env_path: Path, auth_users_json: str) -> None:
     line = f"AUTH_USERS_JSON={auth_users_json}"
     if env_path.exists():
@@ -103,16 +127,16 @@ def main() -> int:
         print("Password cannot be empty.", file=sys.stderr)
         return 1
 
-    users = load_users()
+    env_path = resolve_env_path(args.write_env)
+    users = load_users(env_path=env_path)
     users = upsert_user(users=users, username=username, role=role, password=password)
     auth_users_json = render_auth_users_json(users)
 
-    if args.write_env:
-        env_path = Path(args.write_env).expanduser().resolve()
+    if args.print_only:
+        print("AUTH_USERS_JSON=" + auth_users_json)
+    else:
         write_env_file(env_path=env_path, auth_users_json=auth_users_json)
         print(f"Updated AUTH_USERS_JSON in {env_path}")
-    else:
-        print("AUTH_USERS_JSON=" + auth_users_json)
 
     return 0
 
