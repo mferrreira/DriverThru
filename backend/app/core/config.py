@@ -18,16 +18,13 @@ class Settings(BaseSettings):
     MINIO_STARTUP_STRICT: bool = False
     DOCUMENTS_DIR: str = "../documents"
     GENERATED_DOCUMENTS_PREFIX: str = "generated-documents"
-    JWT_SECRET_KEY: str = "change-me-in-production"
+    JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
     AUTH_COOKIE_NAME: str = "driverthru_access_token"
     AUTH_COOKIE_SECURE: bool = False
     AUTH_COOKIE_SAMESITE: str = "lax"
-    AUTH_USERS_JSON: str = (
-        '[{"username":"admin","password":"admin123","role":"admin"},'
-        '{"username":"operator","password":"operator123","role":"operator"}]'
-    )
+    AUTH_USERS_JSON: str
 
     model_config = SettingsConfigDict(
         env_file=(".env", "../.env"),
