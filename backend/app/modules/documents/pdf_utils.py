@@ -62,7 +62,8 @@ def render_template_pdf(template_key: TemplateKey, values: dict[str, str]) -> tu
         matched_fields = len(resolved)
     elif template_key == "affidavit":
         matched_fields = _render_affidavit_overlay(reader=reader, writer=writer, values=values)
-        total_template_fields = len(AFFIDAVIT_OVERLAY_FIELDS)
+        # Affidavit is anchor-overlay based; total reflects drawable overlay rules.
+        total_template_fields = len(AFFIDAVIT_ANCHOR_RULES)
     else:
         writer.append_pages_from_reader(reader)
 
@@ -117,6 +118,12 @@ def _render_affidavit_overlay(reader: PdfReader, writer: PdfWriter, values: dict
     for value_key, anchor_text, dx, dy, font_size in AFFIDAVIT_ANCHOR_RULES:
         anchor_key = _normalize_space(anchor_text)
         pos = anchor_positions.get(anchor_key)
+        if not pos:
+            # Some anchors are extracted as longer lines in the source PDF.
+            for extracted_key, extracted_pos in anchor_positions.items():
+                if anchor_key in extracted_key:
+                    pos = extracted_pos
+                    break
         value = values.get(value_key)
         if not pos or not value:
             continue
