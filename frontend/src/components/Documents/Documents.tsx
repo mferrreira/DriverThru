@@ -92,6 +92,47 @@ function customerLabel(customer: CustomerListItem): string {
   return `${customer.id} - ${customer.first_name} ${customer.last_name}`.trim();
 }
 
+function usDateToInput(value: string): string {
+  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) {
+    return "";
+  }
+  const [, month, day, year] = match;
+  return `${year}-${month}-${day}`;
+}
+
+function inputDateToUS(value: string): string {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    return value;
+  }
+  const [, year, month, day] = match;
+  return `${month}/${day}/${year}`;
+}
+
+function normalizeToUSDate(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+  const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) {
+    const [, year, month, day] = iso;
+    return `${month}/${day}/${year}`;
+  }
+  const slash = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!slash) {
+    return trimmed;
+  }
+  const first = Number(slash[1]);
+  const second = Number(slash[2]);
+  const year = slash[3];
+  if (first > 12 && second <= 12) {
+    return `${String(second).padStart(2, "0")}/${String(first).padStart(2, "0")}/${year}`;
+  }
+  return `${String(first).padStart(2, "0")}/${String(second).padStart(2, "0")}/${year}`;
+}
+
 export default function Documents() {
   const [searchParams] = useSearchParams();
   const customerIdFromQuery = searchParams.get("customerId");
@@ -388,7 +429,10 @@ export default function Documents() {
           nj_driver_license_id: licenseType === "nj" && selectedLicenseId ? Number(selectedLicenseId) : null,
           brazil_driver_license_id: licenseType === "br" && selectedLicenseId ? Number(selectedLicenseId) : null,
           passport_id: selectedPassportId ? Number(selectedPassportId) : null,
-          field_overrides: fieldOverrides,
+          field_overrides:
+            templateKey === "ba208" && fieldOverrides.Date
+              ? { ...fieldOverrides, Date: normalizeToUSDate(fieldOverrides.Date) }
+              : fieldOverrides,
         }),
       });
       if (!response.ok) {
@@ -682,6 +726,22 @@ export default function Documents() {
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="text-xs">
+                    Mailing Street / PO Box
+                    <input
+                      value={getOverride("Mailing Address Street PO Box")}
+                      onChange={(event) => setOverrideValue("Mailing Address Street PO Box", event.target.value)}
+                      className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
+                    />
+                  </label>
+                  <label className="text-xs">
+                    Mailing Apt/Floor/Unit
+                    <input
+                      value={getOverride("AptFloorUnit")}
+                      onChange={(event) => setOverrideValue("AptFloorUnit", event.target.value)}
+                      className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
+                    />
+                  </label>
+                  <label className="text-xs">
                     Mailing City
                     <input
                       value={getOverride("City")}
@@ -714,6 +774,24 @@ export default function Documents() {
                     />
                   </label>
                   <label className="text-xs">
+                    Residential Street (if different)
+                    <input
+                      value={getOverride("Residential Address If Different from Mailing")}
+                      onChange={(event) =>
+                        setOverrideValue("Residential Address If Different from Mailing", event.target.value)
+                      }
+                      className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
+                    />
+                  </label>
+                  <label className="text-xs">
+                    Residential Apt/Floor/Unit
+                    <input
+                      value={getOverride("AptFloorUnit_2")}
+                      onChange={(event) => setOverrideValue("AptFloorUnit_2", event.target.value)}
+                      className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
+                    />
+                  </label>
+                  <label className="text-xs">
                     Residential City
                     <input
                       value={getOverride("City_2")}
@@ -742,6 +820,16 @@ export default function Documents() {
                     <input
                       value={getOverride("County_2")}
                       onChange={(event) => setOverrideValue("County_2", event.target.value)}
+                      className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
+                    />
+                  </label>
+                  <label className="text-xs">
+                    Signature Date
+                    <input
+                      type="date"
+                      lang="en-US"
+                      value={usDateToInput(getOverride("Date"))}
+                      onChange={(event) => setOverrideValue("Date", normalizeToUSDate(inputDateToUS(event.target.value)))}
                       className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
                     />
                   </label>

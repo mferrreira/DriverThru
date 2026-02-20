@@ -1,9 +1,71 @@
+import { useState } from "react";
 import type { Dispatch, FormEvent, SetStateAction } from "react";
 
 import CollapsibleSection from "../CollapsibleSection";
 import { eyeColorOptions, genderOptions } from "../constants";
 import type { AddressType, CustomerForm } from "../types";
 import CustomerPhotoField from "./CustomerPhotoField";
+
+function parseNumber(value: string): number | null {
+  const normalized = value.trim().replace(",", ".");
+  if (!normalized) {
+    return null;
+  }
+  const num = Number(normalized);
+  return Number.isFinite(num) ? num : null;
+}
+
+function lbsToKg(value: string): string {
+  const lbs = parseNumber(value);
+  if (lbs === null) {
+    return "";
+  }
+  return (lbs / 2.2046226218).toFixed(1);
+}
+
+function kgToLbs(value: string): string {
+  const kg = parseNumber(value);
+  if (kg === null) {
+    return "";
+  }
+  return (kg * 2.2046226218).toFixed(1);
+}
+
+function imperialToMetric(feetRaw: string, inchesRaw: string): { meters: string; centimeters: string } {
+  const feet = parseNumber(feetRaw) ?? 0;
+  const inches = parseNumber(inchesRaw) ?? 0;
+  const totalInches = feet * 12 + inches;
+  if (!Number.isFinite(totalInches) || totalInches <= 0) {
+    return { meters: "", centimeters: "" };
+  }
+  const totalCentimeters = Math.round(totalInches * 2.54);
+  const meters = Math.floor(totalCentimeters / 100);
+  const centimeters = totalCentimeters % 100;
+  return {
+    meters: String(meters),
+    centimeters: String(centimeters),
+  };
+}
+
+function metricToImperial(metersRaw: string, centimetersRaw: string): { feet: string; inches: string } {
+  const meters = parseNumber(metersRaw) ?? 0;
+  const centimeters = parseNumber(centimetersRaw) ?? 0;
+  const totalCentimeters = meters * 100 + centimeters;
+  if (!Number.isFinite(totalCentimeters) || totalCentimeters <= 0) {
+    return { feet: "", inches: "" };
+  }
+  const totalInches = totalCentimeters / 2.54;
+  let feet = Math.floor(totalInches / 12);
+  let inches = Math.round(totalInches - feet * 12);
+  if (inches === 12) {
+    feet += 1;
+    inches = 0;
+  }
+  return {
+    feet: String(feet),
+    inches: String(inches),
+  };
+}
 
 type CustomerCoreSectionProps = {
   customerMode: "create" | "edit";
@@ -38,6 +100,34 @@ export default function CustomerCoreSection({
   onDeactivate,
   onUploadPhoto,
 }: CustomerCoreSectionProps) {
+  const [showMetricConverter, setShowMetricConverter] = useState(false);
+  const [metricWeightKg, setMetricWeightKg] = useState("");
+  const [metricMeters, setMetricMeters] = useState("");
+  const [metricCentimeters, setMetricCentimeters] = useState("");
+
+  function openMetricConverter() {
+    const metricHeight = imperialToMetric(customerForm.height_feet, customerForm.height_inches);
+    setMetricWeightKg(lbsToKg(customerForm.weight_lbs));
+    setMetricMeters(metricHeight.meters);
+    setMetricCentimeters(metricHeight.centimeters);
+    setShowMetricConverter(true);
+  }
+
+  function applyMetricConverter() {
+    const converted = metricToImperial(metricMeters, metricCentimeters);
+    setCustomerForm((prev) => ({
+      ...prev,
+      weight_lbs: kgToLbs(metricWeightKg),
+      height_feet: converted.feet || prev.height_feet,
+      height_inches: converted.inches || prev.height_inches,
+    }));
+    setShowMetricConverter(false);
+  }
+
+  function closeMetricConverter() {
+    applyMetricConverter();
+  }
+
   return (
     <section className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm backdrop-blur-sm">
       <div className="mb-4 flex items-center justify-between">
@@ -182,7 +272,76 @@ export default function CustomerCoreSection({
                 className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
               />
             </label>
+            <div className="sm:col-span-2">
+              <button
+                type="button"
+                onClick={openMetricConverter}
+                className="rounded-md border border-sky-300 px-3 py-2 text-sm font-medium text-sky-800 hover:bg-sky-50"
+              >
+                Open metric converter (kg / m / cm)
+              </button>
+            </div>
           </div>
+
+          {showMetricConverter ? (
+            <div className="rounded-lg border border-sky-200 bg-sky-50/60 p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-sm font-semibold text-sky-900">Metric converter</p>
+                <button
+                  type="button"
+                  onClick={closeMetricConverter}
+                  className="rounded-md border border-sky-300 px-2 py-1 text-xs font-semibold text-sky-800 hover:bg-sky-100"
+                >
+                  X
+                </button>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <label className="text-sm">
+                  Weight (kg)
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.1"
+                    value={metricWeightKg}
+                    onChange={(event) => setMetricWeightKg(event.target.value)}
+                    className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+                  />
+                </label>
+                <label className="text-sm">
+                  Height (m)
+                  <input
+                    type="number"
+                    min={0}
+                    step="1"
+                    value={metricMeters}
+                    onChange={(event) => setMetricMeters(event.target.value)}
+                    className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+                  />
+                </label>
+                <label className="text-sm">
+                  Height (cm)
+                  <input
+                    type="number"
+                    min={0}
+                    max={99}
+                    step="1"
+                    value={metricCentimeters}
+                    onChange={(event) => setMetricCentimeters(event.target.value)}
+                    className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+                  />
+                </label>
+              </div>
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={applyMetricConverter}
+                  className="rounded-md bg-linear-to-r from-sky-700 to-blue-700 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:brightness-110"
+                >
+                  Apply conversion
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-sm">

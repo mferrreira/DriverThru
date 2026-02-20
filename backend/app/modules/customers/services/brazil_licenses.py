@@ -89,6 +89,12 @@ def deactivate_brazil_license(db: Session, customer_id: int, license_id: int) ->
     db.commit()
 
 
+def delete_brazil_license(db: Session, customer_id: int, license_id: int) -> None:
+    license_obj = get_brazil_license_or_404(db, customer_id, license_id)
+    db.delete(license_obj)
+    db.commit()
+
+
 def get_brazil_license_or_404(db: Session, customer_id: int, license_id: int) -> BrazilDriverLicense:
     stmt = select(BrazilDriverLicense).where(
         BrazilDriverLicense.id == license_id,

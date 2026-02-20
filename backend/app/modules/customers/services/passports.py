@@ -75,6 +75,12 @@ def deactivate_passport(db: Session, customer_id: int, passport_id: int) -> None
     db.commit()
 
 
+def delete_passport(db: Session, customer_id: int, passport_id: int) -> None:
+    passport = get_passport_or_404(db, customer_id, passport_id)
+    db.delete(passport)
+    db.commit()
+
+
 def get_passport_or_404(db: Session, customer_id: int, passport_id: int) -> Passport:
     stmt = select(Passport).where(Passport.id == passport_id, Passport.customer_id == customer_id)
     passport = db.scalar(stmt)

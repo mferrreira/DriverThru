@@ -1,5 +1,6 @@
 from .brazil_licenses import (
     create_brazil_license,
+    delete_brazil_license,
     deactivate_brazil_license,
     get_brazil_license_or_404,
     list_brazil_licenses,
@@ -9,6 +10,7 @@ from .brazil_licenses import (
 from .customers import create_customer, deactivate_customer, get_customer_or_404, list_customers, update_customer
 from .nj_licenses import (
     create_nj_license,
+    delete_nj_license,
     deactivate_nj_license,
     get_nj_license_or_404,
     list_nj_licenses,
@@ -17,6 +19,7 @@ from .nj_licenses import (
 )
 from .passports import (
     create_passport,
+    delete_passport,
     deactivate_passport,
     get_passport_or_404,
     list_passports,
@@ -30,6 +33,9 @@ __all__ = [
     "create_customer",
     "create_nj_license",
     "create_passport",
+    "delete_brazil_license",
+    "delete_nj_license",
+    "delete_passport",
     "deactivate_brazil_license",
     "deactivate_customer",
     "deactivate_nj_license",

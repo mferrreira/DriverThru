@@ -188,6 +188,24 @@ export default function Customers() {
     await handleSelectCustomer(selectedCustomerId);
   }
 
+  async function deleteNj(licenseId: number) {
+    if (!selectedCustomerId) {
+      return;
+    }
+    const ok = window.confirm("Delete this NJ license permanently? This cannot be undone.");
+    if (!ok) {
+      return;
+    }
+    const response = await apiFetch(`/customers/${selectedCustomerId}/nj-driver-licenses/${licenseId}/permanent`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      setNjError("Failed to delete NJ license.");
+      return;
+    }
+    await handleSelectCustomer(selectedCustomerId);
+  }
+
   function hydrateBrazilForm(item: BrazilDriverLicense) {
     setBrForm({
       full_name: item.full_name,
@@ -279,6 +297,24 @@ export default function Customers() {
     await handleSelectCustomer(selectedCustomerId);
   }
 
+  async function deleteBrazil(licenseId: number) {
+    if (!selectedCustomerId) {
+      return;
+    }
+    const ok = window.confirm("Delete this Brazil license permanently? This cannot be undone.");
+    if (!ok) {
+      return;
+    }
+    const response = await apiFetch(`/customers/${selectedCustomerId}/brazil-driver-licenses/${licenseId}/permanent`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      setBrError("Failed to delete Brazil license.");
+      return;
+    }
+    await handleSelectCustomer(selectedCustomerId);
+  }
+
   function hydratePassportForm(item: Passport) {
     setPassportForm({
       document_type: item.document_type ?? "",
@@ -359,6 +395,24 @@ export default function Customers() {
     });
     if (!response.ok) {
       setPassportError("Failed to deactivate passport.");
+      return;
+    }
+    await handleSelectCustomer(selectedCustomerId);
+  }
+
+  async function deletePassport(passportId: number) {
+    if (!selectedCustomerId) {
+      return;
+    }
+    const ok = window.confirm("Delete this passport permanently? This cannot be undone.");
+    if (!ok) {
+      return;
+    }
+    const response = await apiFetch(`/customers/${selectedCustomerId}/passports/${passportId}/permanent`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      setPassportError("Failed to delete passport.");
       return;
     }
     await handleSelectCustomer(selectedCustomerId);
@@ -626,6 +680,7 @@ export default function Customers() {
                 njError={njError}
                 onSubmit={(event) => void submitNj(event)}
                 onDeactivate={(licenseId) => void deactivateNj(licenseId)}
+                onDelete={(licenseId) => void deleteNj(licenseId)}
                 onStartEdit={(item) => {
                   setNjMode("edit");
                   setEditingNjId(item.id);
@@ -651,6 +706,7 @@ export default function Customers() {
                 brError={brError}
                 onSubmit={(event) => void submitBrazil(event)}
                 onDeactivate={(licenseId) => void deactivateBrazil(licenseId)}
+                onDelete={(licenseId) => void deleteBrazil(licenseId)}
                 onStartEdit={(item) => {
                   setBrMode("edit");
                   setEditingBrId(item.id);
@@ -674,6 +730,7 @@ export default function Customers() {
                 passportError={passportError}
                 onSubmit={(event) => void submitPassport(event)}
                 onDeactivate={(passportId) => void deactivatePassport(passportId)}
+                onDelete={(passportId) => void deletePassport(passportId)}
                 onStartEdit={(item) => {
                   setPassportMode("edit");
                   setEditingPassportId(item.id);
