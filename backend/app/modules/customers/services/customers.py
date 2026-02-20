@@ -94,6 +94,8 @@ def _build_nj_license_from_create(payload: NJDriverLicenseCreate) -> NJDriverLic
 
     nj_payload = payload.model_dump(exclude={"endorsements", "restrictions"})
     nj_license = NJDriverLicense(**nj_payload)
-    nj_license.endorsements = [NJDriverLicenseEndorsement(code=item) for item in payload.endorsements]
-    nj_license.restrictions = [NJDriverLicenseRestriction(code=item) for item in payload.restrictions]
+    endorsement_codes = list(dict.fromkeys(payload.endorsements))
+    restriction_codes = list(dict.fromkeys(payload.restrictions))
+    nj_license.endorsements = [NJDriverLicenseEndorsement(code=item) for item in endorsement_codes]
+    nj_license.restrictions = [NJDriverLicenseRestriction(code=item) for item in restriction_codes]
     return nj_license

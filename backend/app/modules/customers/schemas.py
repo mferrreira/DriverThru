@@ -76,6 +76,7 @@ class NJDriverLicenseRead(NJDriverLicenseBase, ORMModel):
 
 
 class NJDriverLicenseUpdate(NJDriverLicenseBase):
+    is_current: bool | None = None
     license_number_encrypted: str | None = None
     endorsements: list[NJEndorsementCode] | None = None
     restrictions: list[NJRestrictionCode] | None = None

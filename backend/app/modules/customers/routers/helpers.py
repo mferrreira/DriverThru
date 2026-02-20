@@ -35,4 +35,12 @@ def raise_customer_integrity_error(db: Session, exc: IntegrityError) -> None:
 
 def raise_unprocessable(db: Session, detail: str, exc: IntegrityError) -> None:
     db.rollback()
-    raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail) from exc
+    orig = str(getattr(exc, "orig", exc))
+    resolved_detail = detail
+    if "uq_nj_dl_endorsement_code" in orig:
+        resolved_detail = "Duplicate endorsement code is not allowed."
+    elif "uq_nj_dl_restriction_code" in orig:
+        resolved_detail = "Duplicate restriction code is not allowed."
+    elif "ck_nj_dl_dates_valid" in orig:
+        resolved_detail = "expiration_date must be greater than or equal to issue_date."
+    raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=resolved_detail) from exc
