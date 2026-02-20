@@ -74,6 +74,20 @@ export default function Customers() {
   const [savingPassport, setSavingPassport] = useState(false);
   const [passportError, setPassportError] = useState<string | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [failedPhotoUrls, setFailedPhotoUrls] = useState<Record<string, true>>({});
+
+  function customerInitials(firstName: string, lastName: string): string {
+    const first = firstName.trim().charAt(0);
+    const last = lastName.trim().charAt(0);
+    return `${first}${last}`.toUpperCase();
+  }
+
+  function buildCustomerPhotoUrl(customerId: number, objectKey: string | null): string | null {
+    if (!objectKey) {
+      return null;
+    }
+    return `/api/customers/${customerId}/photo?k=${encodeURIComponent(objectKey)}`;
+  }
 
   useEffect(() => {
     const query = searchParams.get("search")?.trim() ?? "";
@@ -477,66 +491,86 @@ export default function Customers() {
                 </tr>
               ) : null}
               {!loadingList
-                ? customers.map((customer) => (
-                    <tr key={customer.id} className="border-b border-slate-100">
-                      <td className="px-3 py-2.5">
-                        <p className="font-medium text-slate-900">
-                          {customer.first_name} {customer.last_name}
-                        </p>
-                        <p className="text-xs text-slate-500">ID: {customer.id}</p>
-                      </td>
-                      <td className="px-3 py-2.5 text-slate-700">{customer.email || customer.phone_number || "-"}</td>
-                      <td className="px-3 py-2.5 text-slate-700">
-                        {customer.date_of_birth.includes("-")
-                          ? (() => {
-                              const [year, month, day] = customer.date_of_birth.split("-");
-                              return `${month}/${day}/${year}`;
-                            })()
-                          : customer.date_of_birth}
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <span
-                          className={[
-                            "rounded-full px-2 py-0.5 text-xs font-semibold",
-                            customer.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600",
-                          ].join(" ")}
-                        >
-                          {customer.active ? "active" : "inactive"}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => void openEditDialog(customer.id)}
-                            title="Edit customer"
-                            aria-label="Edit customer"
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50"
+                ? customers.map((customer) => {
+                    const photoUrl = buildCustomerPhotoUrl(customer.id, customer.customer_photo_object_key);
+                    const showPhoto = Boolean(photoUrl && !failedPhotoUrls[photoUrl]);
+                    return (
+                      <tr key={customer.id} className="border-b border-slate-100">
+                        <td className="px-3 py-2.5">
+                          <div className="flex items-center gap-3">
+                            {showPhoto && photoUrl ? (
+                              <img
+                                src={photoUrl}
+                                alt={`${customer.first_name} ${customer.last_name}`}
+                                className="h-10 w-10 rounded-full border border-slate-200 object-cover"
+                                onError={() => setFailedPhotoUrls((prev) => ({ ...prev, [photoUrl]: true }))}
+                              />
+                            ) : (
+                              <div className="grid h-10 w-10 place-items-center rounded-full bg-blue-100 text-xs font-semibold uppercase text-blue-700">
+                                {customerInitials(customer.first_name, customer.last_name)}
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-medium text-slate-900">
+                                {customer.first_name} {customer.last_name}
+                              </p>
+                              <p className="text-xs text-slate-500">ID: {customer.id}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2.5 text-slate-700">{customer.email || customer.phone_number || "-"}</td>
+                        <td className="px-3 py-2.5 text-slate-700">
+                          {customer.date_of_birth.includes("-")
+                            ? (() => {
+                                const [year, month, day] = customer.date_of_birth.split("-");
+                                return `${month}/${day}/${year}`;
+                              })()
+                            : customer.date_of_birth}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <span
+                            className={[
+                              "rounded-full px-2 py-0.5 text-xs font-semibold",
+                              customer.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600",
+                            ].join(" ")}
                           >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void deactivateCustomer(customer.id)}
-                            title="Remove customer"
-                            aria-label="Remove customer"
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-red-300 text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openDocumentGenerator(customer.id)}
-                            title="Generate document"
-                            aria-label="Generate document"
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-blue-300 text-blue-700 hover:bg-blue-50"
-                          >
-                            <FileText className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                            {customer.active ? "active" : "inactive"}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => void openEditDialog(customer.id)}
+                              title="Edit customer"
+                              aria-label="Edit customer"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void deactivateCustomer(customer.id)}
+                              title="Remove customer"
+                              aria-label="Remove customer"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-red-300 text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openDocumentGenerator(customer.id)}
+                              title="Generate document"
+                              aria-label="Generate document"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-blue-300 text-blue-700 hover:bg-blue-50"
+                            >
+                              <FileText className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 : null}
             </tbody>
           </table>

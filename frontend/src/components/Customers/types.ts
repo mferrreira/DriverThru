@@ -73,6 +73,7 @@ export type CustomerListItem = {
   id: number;
   first_name: string;
   middle_name: string | null;
+  customer_photo_object_key: string | null;
   last_name: string;
   phone_number: string | null;
   email: string | null;
