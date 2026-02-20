@@ -35,7 +35,7 @@ export default function CustomerPhotoField({
         </div>
 
         <div className="flex-1 space-y-2">
-          <p className="text-xs text-zinc-600">JPG, PNG, WEBP, HEIC or HEIF. Max size: 5MB.</p>
+          <p className="text-xs text-zinc-600">JPG, PNG, WEBP, HEIC or HEIF. Max size: 50MB.</p>
           <input
             type="file"
             accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,.heic,.heif"

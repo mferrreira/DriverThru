@@ -213,6 +213,7 @@ class CustomerListItem(ORMModel):
     id: int
     first_name: str
     middle_name: str | None = None
+    customer_photo_object_key: str | None = None
     last_name: str
     phone_number: str | None = None
     email: EmailStr | None = None

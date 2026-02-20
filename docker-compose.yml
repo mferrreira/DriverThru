@@ -91,7 +91,7 @@ services:
       - .env
     volumes:
       - ./minio/data:/data
-    ports:
+#    ports:
 #      - "9001:9001"
     networks:
       - driverthru_net
