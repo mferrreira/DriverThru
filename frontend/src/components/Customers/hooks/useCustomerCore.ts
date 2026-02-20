@@ -31,7 +31,7 @@ type UseCustomerCoreResult = {
   customerPhotoUrl: string | null;
   uploadingPhoto: boolean;
   photoError: string | null;
-  loadCustomers: (queryOverride?: string) => Promise<void>;
+  loadCustomers: (queryOverride?: string, options?: { skipAutoSelect?: boolean }) => Promise<void>;
   handleSelectCustomer: (customerId: number) => Promise<void>;
   beginCreateCustomer: () => void;
   submitCustomer: (event: FormEvent) => Promise<void>;
@@ -40,6 +40,15 @@ type UseCustomerCoreResult = {
 };
 
 export function useCustomerCore(): UseCustomerCoreResult {
+  return useCustomerCoreWithOptions();
+}
+
+type UseCustomerCoreOptions = {
+  skipInitialAutoSelect?: boolean;
+};
+
+export function useCustomerCoreWithOptions(options: UseCustomerCoreOptions = {}): UseCustomerCoreResult {
+  const skipInitialAutoSelect = options.skipInitialAutoSelect ?? false;
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [search, setSearch] = useState("");
   const [loadingList, setLoadingList] = useState(true);
@@ -71,11 +80,12 @@ export function useCustomerCore(): UseCustomerCoreResult {
   }, [selectedCustomerId, customerForm.customer_photo_object_key, photoVersion]);
 
   useEffect(() => {
-    void loadCustomers();
+    void loadCustomers(undefined, { skipAutoSelect: skipInitialAutoSelect });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function loadCustomers(queryOverride?: string) {
+  async function loadCustomers(queryOverride?: string, options?: { skipAutoSelect?: boolean }) {
+    const skipAutoSelect = options?.skipAutoSelect ?? false;
     setLoadingList(true);
     setListError(null);
     try {
@@ -87,7 +97,7 @@ export function useCustomerCore(): UseCustomerCoreResult {
       }
       const data = (await response.json()) as CustomerListResponse;
       setCustomers(data.items);
-      if (!selectedCustomerId && data.items.length > 0) {
+      if (!skipAutoSelect && !selectedCustomerId && data.items.length > 0) {
         await handleSelectCustomer(data.items[0].id);
       }
       if (selectedCustomerId && !data.items.some((item) => item.id === selectedCustomerId)) {

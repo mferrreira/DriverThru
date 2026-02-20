@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { apiFetch } from "../../lib/api";
 import { formatDateTimeUS } from "../../lib/utils";
@@ -38,6 +39,7 @@ function triggerDownload(blob: Blob, fileName: string) {
 }
 
 export default function Reports() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState<ReportType | null>(null);
   const [loadingTable, setLoadingTable] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -115,6 +117,10 @@ export default function Reports() {
       return "-";
     }
     return formatDateTimeUS(date).split(",")[0];
+  }
+
+  function goToCustomer(customerId: number) {
+    navigate(`/customers?customerId=${customerId}`);
   }
 
   return (
@@ -250,7 +256,13 @@ export default function Reports() {
                 ? pendingRows.map((item) => (
                     <tr key={`${item.document_type}:${item.source_document_id}`} className="border-b border-slate-100">
                       <td className="px-3 py-2.5">
-                        <p className="font-medium text-slate-900">{item.customer_name}</p>
+                        <button
+                          type="button"
+                          onClick={() => goToCustomer(item.customer_id)}
+                          className="font-medium text-slate-900 underline-offset-2 hover:text-blue-700 hover:underline"
+                        >
+                          {item.customer_name}
+                        </button>
                         <p className="text-xs text-slate-500">Customer #{item.customer_id}</p>
                       </td>
                       <td className="px-3 py-2.5 text-slate-700">#{item.source_document_id}</td>
