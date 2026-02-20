@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Dispatch, FormEvent, SetStateAction } from "react";
 
 import CollapsibleSection from "../CollapsibleSection";
@@ -99,28 +100,32 @@ export default function CustomerCoreSection({
   onDeactivate,
   onUploadPhoto,
 }: CustomerCoreSectionProps) {
-  const metricHeight = imperialToMetric(customerForm.height_feet, customerForm.height_inches);
+  const [showMetricConverter, setShowMetricConverter] = useState(false);
+  const [metricWeightKg, setMetricWeightKg] = useState("");
+  const [metricMeters, setMetricMeters] = useState("");
+  const [metricCentimeters, setMetricCentimeters] = useState("");
 
-  function handleWeightKgChange(value: string) {
-    setCustomerForm((prev) => ({ ...prev, weight_lbs: kgToLbs(value) }));
+  function openMetricConverter() {
+    const metricHeight = imperialToMetric(customerForm.height_feet, customerForm.height_inches);
+    setMetricWeightKg(lbsToKg(customerForm.weight_lbs));
+    setMetricMeters(metricHeight.meters);
+    setMetricCentimeters(metricHeight.centimeters);
+    setShowMetricConverter(true);
   }
 
-  function handleHeightMetersChange(value: string) {
-    const converted = metricToImperial(value, metricHeight.centimeters);
+  function applyMetricConverter() {
+    const converted = metricToImperial(metricMeters, metricCentimeters);
     setCustomerForm((prev) => ({
       ...prev,
-      height_feet: converted.feet,
-      height_inches: converted.inches,
+      weight_lbs: kgToLbs(metricWeightKg),
+      height_feet: converted.feet || prev.height_feet,
+      height_inches: converted.inches || prev.height_inches,
     }));
+    setShowMetricConverter(false);
   }
 
-  function handleHeightCentimetersChange(value: string) {
-    const converted = metricToImperial(metricHeight.meters, value);
-    setCustomerForm((prev) => ({
-      ...prev,
-      height_feet: converted.feet,
-      height_inches: converted.inches,
-    }));
+  function closeMetricConverter() {
+    applyMetricConverter();
   }
 
   return (
@@ -246,17 +251,6 @@ export default function CustomerCoreSection({
               />
             </label>
             <label className="text-sm">
-              Weight (kg)
-              <input
-                type="number"
-                min={0}
-                step="0.1"
-                value={lbsToKg(customerForm.weight_lbs)}
-                onChange={(event) => handleWeightKgChange(event.target.value)}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
               Height (feet)
               <input
                 type="number"
@@ -278,30 +272,76 @@ export default function CustomerCoreSection({
                 className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
               />
             </label>
-            <label className="text-sm">
-              Height (meters)
-              <input
-                type="number"
-                min={0}
-                step="1"
-                value={metricHeight.meters}
-                onChange={(event) => handleHeightMetersChange(event.target.value)}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
-            <label className="text-sm">
-              Height (centimeters)
-              <input
-                type="number"
-                min={0}
-                max={99}
-                step="1"
-                value={metricHeight.centimeters}
-                onChange={(event) => handleHeightCentimetersChange(event.target.value)}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-              />
-            </label>
+            <div className="sm:col-span-2">
+              <button
+                type="button"
+                onClick={openMetricConverter}
+                className="rounded-md border border-sky-300 px-3 py-2 text-sm font-medium text-sky-800 hover:bg-sky-50"
+              >
+                Open metric converter (kg / m / cm)
+              </button>
+            </div>
           </div>
+
+          {showMetricConverter ? (
+            <div className="rounded-lg border border-sky-200 bg-sky-50/60 p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-sm font-semibold text-sky-900">Metric converter</p>
+                <button
+                  type="button"
+                  onClick={closeMetricConverter}
+                  className="rounded-md border border-sky-300 px-2 py-1 text-xs font-semibold text-sky-800 hover:bg-sky-100"
+                >
+                  X
+                </button>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <label className="text-sm">
+                  Weight (kg)
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.1"
+                    value={metricWeightKg}
+                    onChange={(event) => setMetricWeightKg(event.target.value)}
+                    className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+                  />
+                </label>
+                <label className="text-sm">
+                  Height (m)
+                  <input
+                    type="number"
+                    min={0}
+                    step="1"
+                    value={metricMeters}
+                    onChange={(event) => setMetricMeters(event.target.value)}
+                    className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+                  />
+                </label>
+                <label className="text-sm">
+                  Height (cm)
+                  <input
+                    type="number"
+                    min={0}
+                    max={99}
+                    step="1"
+                    value={metricCentimeters}
+                    onChange={(event) => setMetricCentimeters(event.target.value)}
+                    className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+                  />
+                </label>
+              </div>
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={applyMetricConverter}
+                  className="rounded-md bg-linear-to-r from-sky-700 to-blue-700 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:brightness-110"
+                >
+                  Apply conversion
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-sm">
