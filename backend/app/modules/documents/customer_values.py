@@ -120,6 +120,8 @@ def build_pdf_value_map(
 
     mailing = addresses_by_type.get(AddressType.MAILING) or addresses_by_type.get(AddressType.RESIDENTIAL)
     residential = addresses_by_type.get(AddressType.RESIDENTIAL)
+    out_of_state = addresses_by_type.get(AddressType.OUT_OF_STATE)
+
     if mailing:
         put("mailing_street", mailing.street)
         put("mailing_apt", mailing.apt)
@@ -128,13 +130,34 @@ def build_pdf_value_map(
         put("mailing_zip", mailing.zip_code)
         put("mailing_county", mailing.county)
 
+    # BA-208 "Residential Address (If Different from Mailing)" should remain blank
+    # when only one address exists (e.g., residential only). Clear any generic values
+    # populated earlier, then set only when a distinct secondary address exists.
+    for key in (
+        "residential_street",
+        "residential_apt",
+        "residential_city",
+        "residential_state",
+        "residential_zip",
+        "residential_county",
+    ):
+        result.pop(key, None)
+
+    # If a second address exists, prefer residential when distinct; otherwise
+    # use out-of-state when distinct.
+    secondary_address = None
     if residential and mailing and not _is_same_address(residential, mailing):
-        put("residential_street", residential.street)
-        put("residential_apt", residential.apt)
-        put("residential_city", residential.city)
-        put("residential_state", residential.state)
-        put("residential_zip", residential.zip_code)
-        put("residential_county", residential.county)
+        secondary_address = residential
+    elif out_of_state and mailing and not _is_same_address(out_of_state, mailing):
+        secondary_address = out_of_state
+
+    if secondary_address:
+        put("residential_street", secondary_address.street)
+        put("residential_apt", secondary_address.apt)
+        put("residential_city", secondary_address.city)
+        put("residential_state", secondary_address.state)
+        put("residential_zip", secondary_address.zip_code)
+        put("residential_county", secondary_address.county)
 
     if current_nj:
         put("Check Box1", "Driver License")
