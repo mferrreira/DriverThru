@@ -50,4 +50,5 @@ AFFIDAVIT_ANCHOR_RULES: list[tuple[str, str, float, float, int]] = [
     ("full_name", "I,", 26.0, 0.0, 11),
     ("date_of_birth", "born on", 54.0, 0.0, 11),
     ("applicant_date", "Date", 0.0, 12.0, 11),
+    ("full_name", "witnessed", 120.0, 0.0, 11),
 ]
