@@ -41,4 +41,4 @@ minio/data/
 dist/
 
 # Infra
-documents/*.pdf
+#documents/*.pdf

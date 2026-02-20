@@ -112,6 +112,18 @@ By default, templates are loaded from `documents/`:
 
 In Docker, this folder is mounted to `/app/documents` in backend.
 
+## Database Backup and Restore
+
+- Automatic backups run in `db-backup` service (default: every 24h, keep 15 files).
+- Backup files are stored in `postgres/backups/`.
+- Restore CLI:
+
+```bash
+./postgres/restore.sh --list
+./postgres/restore.sh --latest
+./postgres/restore.sh --file ./postgres/backups/driverthru_YYYY-MM-DD_HH-MM.sql
+```
+
 ## Main Endpoints
 
 ### Auth
