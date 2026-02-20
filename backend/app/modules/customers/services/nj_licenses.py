@@ -95,6 +95,12 @@ def deactivate_nj_license(db: Session, customer_id: int, license_id: int) -> Non
     db.commit()
 
 
+def delete_nj_license(db: Session, customer_id: int, license_id: int) -> None:
+    license_obj = get_nj_license_or_404(db, customer_id, license_id)
+    db.delete(license_obj)
+    db.commit()
+
+
 def get_nj_license_or_404(db: Session, customer_id: int, license_id: int) -> NJDriverLicense:
     stmt = (
         select(NJDriverLicense)

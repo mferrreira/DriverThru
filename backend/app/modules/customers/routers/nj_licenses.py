@@ -8,6 +8,7 @@ from app.api.deps import get_db
 from app.modules.customers.schemas import NJDriverLicenseCreate, NJDriverLicenseRead, NJDriverLicenseUpdate
 from app.modules.customers.services.nj_licenses import (
     create_nj_license,
+    delete_nj_license,
     deactivate_nj_license,
     get_nj_license_or_404,
     list_nj_licenses,
@@ -93,6 +94,15 @@ def renew_nj_license_route(
 def deactivate_nj_license_route(customer_id: int, license_id: int, db: Session = Depends(get_db)) -> Response:
     try:
         deactivate_nj_license(db=db, customer_id=customer_id, license_id=license_id)
+    except Exception as exc:  # noqa: BLE001
+        raise_not_found(exc)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete("/{customer_id}/nj-driver-licenses/{license_id}/permanent", status_code=status.HTTP_204_NO_CONTENT)
+def delete_nj_license_route(customer_id: int, license_id: int, db: Session = Depends(get_db)) -> Response:
+    try:
+        delete_nj_license(db=db, customer_id=customer_id, license_id=license_id)
     except Exception as exc:  # noqa: BLE001
         raise_not_found(exc)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

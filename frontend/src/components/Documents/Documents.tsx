@@ -110,6 +110,29 @@ function inputDateToUS(value: string): string {
   return `${month}/${day}/${year}`;
 }
 
+function normalizeToUSDate(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+  const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) {
+    const [, year, month, day] = iso;
+    return `${month}/${day}/${year}`;
+  }
+  const slash = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!slash) {
+    return trimmed;
+  }
+  const first = Number(slash[1]);
+  const second = Number(slash[2]);
+  const year = slash[3];
+  if (first > 12 && second <= 12) {
+    return `${String(second).padStart(2, "0")}/${String(first).padStart(2, "0")}/${year}`;
+  }
+  return `${String(first).padStart(2, "0")}/${String(second).padStart(2, "0")}/${year}`;
+}
+
 export default function Documents() {
   const [searchParams] = useSearchParams();
   const customerIdFromQuery = searchParams.get("customerId");
@@ -406,7 +429,10 @@ export default function Documents() {
           nj_driver_license_id: licenseType === "nj" && selectedLicenseId ? Number(selectedLicenseId) : null,
           brazil_driver_license_id: licenseType === "br" && selectedLicenseId ? Number(selectedLicenseId) : null,
           passport_id: selectedPassportId ? Number(selectedPassportId) : null,
-          field_overrides: fieldOverrides,
+          field_overrides:
+            templateKey === "ba208" && fieldOverrides.Date
+              ? { ...fieldOverrides, Date: normalizeToUSDate(fieldOverrides.Date) }
+              : fieldOverrides,
         }),
       });
       if (!response.ok) {
@@ -801,8 +827,9 @@ export default function Documents() {
                     Signature Date
                     <input
                       type="date"
+                      lang="en-US"
                       value={usDateToInput(getOverride("Date"))}
-                      onChange={(event) => setOverrideValue("Date", inputDateToUS(event.target.value))}
+                      onChange={(event) => setOverrideValue("Date", normalizeToUSDate(inputDateToUS(event.target.value)))}
                       className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
                     />
                   </label>

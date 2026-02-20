@@ -5,6 +5,67 @@ import { eyeColorOptions, genderOptions } from "../constants";
 import type { AddressType, CustomerForm } from "../types";
 import CustomerPhotoField from "./CustomerPhotoField";
 
+function parseNumber(value: string): number | null {
+  const normalized = value.trim().replace(",", ".");
+  if (!normalized) {
+    return null;
+  }
+  const num = Number(normalized);
+  return Number.isFinite(num) ? num : null;
+}
+
+function lbsToKg(value: string): string {
+  const lbs = parseNumber(value);
+  if (lbs === null) {
+    return "";
+  }
+  return (lbs / 2.2046226218).toFixed(1);
+}
+
+function kgToLbs(value: string): string {
+  const kg = parseNumber(value);
+  if (kg === null) {
+    return "";
+  }
+  return (kg * 2.2046226218).toFixed(1);
+}
+
+function imperialToMetric(feetRaw: string, inchesRaw: string): { meters: string; centimeters: string } {
+  const feet = parseNumber(feetRaw) ?? 0;
+  const inches = parseNumber(inchesRaw) ?? 0;
+  const totalInches = feet * 12 + inches;
+  if (!Number.isFinite(totalInches) || totalInches <= 0) {
+    return { meters: "", centimeters: "" };
+  }
+  const totalCentimeters = Math.round(totalInches * 2.54);
+  const meters = Math.floor(totalCentimeters / 100);
+  const centimeters = totalCentimeters % 100;
+  return {
+    meters: String(meters),
+    centimeters: String(centimeters),
+  };
+}
+
+function metricToImperial(metersRaw: string, centimetersRaw: string): { feet: string; inches: string } {
+  const meters = parseNumber(metersRaw) ?? 0;
+  const centimeters = parseNumber(centimetersRaw) ?? 0;
+  const totalCentimeters = meters * 100 + centimeters;
+  if (!Number.isFinite(totalCentimeters) || totalCentimeters <= 0) {
+    return { feet: "", inches: "" };
+  }
+  const totalInches = totalCentimeters / 2.54;
+  let feet = Math.floor(totalInches / 12);
+  let inches = Math.round(totalInches - feet * 12);
+  if (inches === 12) {
+    feet += 1;
+    inches = 0;
+  }
+  return {
+    feet: String(feet),
+    inches: String(inches),
+  };
+}
+
 type CustomerCoreSectionProps = {
   customerMode: "create" | "edit";
   selectedCustomerName: string;
@@ -38,6 +99,30 @@ export default function CustomerCoreSection({
   onDeactivate,
   onUploadPhoto,
 }: CustomerCoreSectionProps) {
+  const metricHeight = imperialToMetric(customerForm.height_feet, customerForm.height_inches);
+
+  function handleWeightKgChange(value: string) {
+    setCustomerForm((prev) => ({ ...prev, weight_lbs: kgToLbs(value) }));
+  }
+
+  function handleHeightMetersChange(value: string) {
+    const converted = metricToImperial(value, metricHeight.centimeters);
+    setCustomerForm((prev) => ({
+      ...prev,
+      height_feet: converted.feet,
+      height_inches: converted.inches,
+    }));
+  }
+
+  function handleHeightCentimetersChange(value: string) {
+    const converted = metricToImperial(metricHeight.meters, value);
+    setCustomerForm((prev) => ({
+      ...prev,
+      height_feet: converted.feet,
+      height_inches: converted.inches,
+    }));
+  }
+
   return (
     <section className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm backdrop-blur-sm">
       <div className="mb-4 flex items-center justify-between">
@@ -161,6 +246,17 @@ export default function CustomerCoreSection({
               />
             </label>
             <label className="text-sm">
+              Weight (kg)
+              <input
+                type="number"
+                min={0}
+                step="0.1"
+                value={lbsToKg(customerForm.weight_lbs)}
+                onChange={(event) => handleWeightKgChange(event.target.value)}
+                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              />
+            </label>
+            <label className="text-sm">
               Height (feet)
               <input
                 type="number"
@@ -179,6 +275,29 @@ export default function CustomerCoreSection({
                 max={11}
                 value={customerForm.height_inches}
                 onChange={(event) => setCustomerForm((prev) => ({ ...prev, height_inches: event.target.value }))}
+                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              />
+            </label>
+            <label className="text-sm">
+              Height (meters)
+              <input
+                type="number"
+                min={0}
+                step="1"
+                value={metricHeight.meters}
+                onChange={(event) => handleHeightMetersChange(event.target.value)}
+                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              />
+            </label>
+            <label className="text-sm">
+              Height (centimeters)
+              <input
+                type="number"
+                min={0}
+                max={99}
+                step="1"
+                value={metricHeight.centimeters}
+                onChange={(event) => handleHeightCentimetersChange(event.target.value)}
                 className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
               />
             </label>

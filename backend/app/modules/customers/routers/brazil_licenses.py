@@ -7,6 +7,7 @@ from app.api.deps import get_db
 from app.modules.customers.schemas import BrazilDriverLicenseCreate, BrazilDriverLicenseRead, BrazilDriverLicenseUpdate
 from app.modules.customers.services.brazil_licenses import (
     create_brazil_license,
+    delete_brazil_license,
     deactivate_brazil_license,
     get_brazil_license_or_404,
     list_brazil_licenses,
@@ -90,6 +91,15 @@ def renew_brazil_license_route(
 def deactivate_brazil_license_route(customer_id: int, license_id: int, db: Session = Depends(get_db)) -> Response:
     try:
         deactivate_brazil_license(db=db, customer_id=customer_id, license_id=license_id)
+    except Exception as exc:  # noqa: BLE001
+        raise_not_found(exc)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete("/{customer_id}/brazil-driver-licenses/{license_id}/permanent", status_code=status.HTTP_204_NO_CONTENT)
+def delete_brazil_license_route(customer_id: int, license_id: int, db: Session = Depends(get_db)) -> Response:
+    try:
+        delete_brazil_license(db=db, customer_id=customer_id, license_id=license_id)
     except Exception as exc:  # noqa: BLE001
         raise_not_found(exc)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

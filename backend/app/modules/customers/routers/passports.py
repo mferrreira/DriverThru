@@ -7,6 +7,7 @@ from app.api.deps import get_db
 from app.modules.customers.schemas import PassportCreate, PassportRead, PassportUpdate
 from app.modules.customers.services.passports import (
     create_passport,
+    delete_passport,
     deactivate_passport,
     get_passport_or_404,
     list_passports,
@@ -82,6 +83,15 @@ def renew_passport_route(
 def deactivate_passport_route(customer_id: int, passport_id: int, db: Session = Depends(get_db)) -> Response:
     try:
         deactivate_passport(db=db, customer_id=customer_id, passport_id=passport_id)
+    except Exception as exc:  # noqa: BLE001
+        raise_not_found(exc)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete("/{customer_id}/passports/{passport_id}/permanent", status_code=status.HTTP_204_NO_CONTENT)
+def delete_passport_route(customer_id: int, passport_id: int, db: Session = Depends(get_db)) -> Response:
+    try:
+        delete_passport(db=db, customer_id=customer_id, passport_id=passport_id)
     except Exception as exc:  # noqa: BLE001
         raise_not_found(exc)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
