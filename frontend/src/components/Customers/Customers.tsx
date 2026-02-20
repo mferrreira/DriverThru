@@ -11,7 +11,7 @@ import {
   normalizeDate,
   normalizeString,
 } from "./formUtils";
-import { useCustomerCore } from "./hooks/useCustomerCore";
+import { useCustomerCoreWithOptions } from "./hooks/useCustomerCore";
 import BrazilLicensesSection from "./sections/BrazilLicensesSection";
 import CustomerCoreSection from "./sections/CustomerCoreSection";
 import NJLicensesSection from "./sections/NJLicensesSection";
@@ -54,7 +54,9 @@ export default function Customers() {
     submitCustomer,
     deactivateCustomer,
     uploadCustomerPhoto,
-  } = useCustomerCore();
+  } = useCustomerCoreWithOptions({
+    skipInitialAutoSelect: Boolean(searchParams.get("customerId")),
+  });
 
   const [njForm, setNjForm] = useState<NJForm>(defaultNJForm);
   const [njMode, setNjMode] = useState<"create" | "edit" | "renew">("create");
@@ -91,11 +93,23 @@ export default function Customers() {
 
   useEffect(() => {
     const query = searchParams.get("search")?.trim() ?? "";
-    if (!query) {
-      return;
-    }
-    setSearch(query);
-    void loadCustomers(query);
+    const customerIdParam = searchParams.get("customerId");
+    const targetCustomerId = customerIdParam ? Number(customerIdParam) : NaN;
+    const hasTargetCustomer = Number.isInteger(targetCustomerId) && targetCustomerId > 0;
+
+    void (async () => {
+      if (query) {
+        setSearch(query);
+      }
+      if (!query && !hasTargetCustomer) {
+        return;
+      }
+      await loadCustomers(query || undefined, { skipAutoSelect: hasTargetCustomer });
+      if (hasTargetCustomer) {
+        await handleSelectCustomer(targetCustomerId);
+        setEditorOpen(true);
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, setSearch]);
 
