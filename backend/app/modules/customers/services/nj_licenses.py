@@ -59,10 +59,12 @@ def update_nj_license(
         setattr(license_obj, field, value)
 
     if payload.endorsements is not None:
-        license_obj.endorsements = [NJDriverLicenseEndorsement(code=item) for item in payload.endorsements]
+        endorsement_codes = list(dict.fromkeys(payload.endorsements))
+        _sync_endorsements(license_obj, endorsement_codes)
     if payload.restrictions is not None:
-        license_obj.restrictions = [NJDriverLicenseRestriction(code=item) for item in payload.restrictions]
-    if payload.is_current:
+        restriction_codes = list(dict.fromkeys(payload.restrictions))
+        _sync_restrictions(license_obj, restriction_codes)
+    if payload.is_current is True:
         clear_current_flags(db, model=NJDriverLicense, customer_id=customer_id, except_id=license_id)
 
     db.commit()
@@ -119,6 +121,26 @@ def get_nj_license_or_404(db: Session, customer_id: int, license_id: int) -> NJD
 def _build_nj_license_from_create(payload: NJDriverLicenseCreate) -> NJDriverLicense:
     nj_payload = payload.model_dump(exclude={"endorsements", "restrictions"})
     nj_license = NJDriverLicense(**nj_payload)
-    nj_license.endorsements = [NJDriverLicenseEndorsement(code=item) for item in payload.endorsements]
-    nj_license.restrictions = [NJDriverLicenseRestriction(code=item) for item in payload.restrictions]
+    endorsement_codes = list(dict.fromkeys(payload.endorsements))
+    restriction_codes = list(dict.fromkeys(payload.restrictions))
+    nj_license.endorsements = [NJDriverLicenseEndorsement(code=item) for item in endorsement_codes]
+    nj_license.restrictions = [NJDriverLicenseRestriction(code=item) for item in restriction_codes]
     return nj_license
+
+
+def _sync_endorsements(license_obj: NJDriverLicense, desired_codes: list) -> None:
+    desired = set(desired_codes)
+    current = {item.code: item for item in license_obj.endorsements}
+    license_obj.endorsements = [item for item in license_obj.endorsements if item.code in desired]
+    for code in desired_codes:
+        if code not in current:
+            license_obj.endorsements.append(NJDriverLicenseEndorsement(code=code))
+
+
+def _sync_restrictions(license_obj: NJDriverLicense, desired_codes: list) -> None:
+    desired = set(desired_codes)
+    current = {item.code: item for item in license_obj.restrictions}
+    license_obj.restrictions = [item for item in license_obj.restrictions if item.code in desired]
+    for code in desired_codes:
+        if code not in current:
+            license_obj.restrictions.append(NJDriverLicenseRestriction(code=code))

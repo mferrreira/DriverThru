@@ -157,14 +157,24 @@ export default function Customers() {
       const method = njMode === "create" || njMode === "renew" ? "POST" : "PATCH";
       const response = await apiFetch(path, { method, body: JSON.stringify(payload) });
       if (!response.ok) {
-        throw new Error(`Failed to save NJ license: ${response.status}`);
+        let detail = `Failed to save NJ license: ${response.status}`;
+        try {
+          const body = (await response.json()) as { detail?: string };
+          if (typeof body.detail === "string" && body.detail.trim()) {
+            detail = body.detail;
+          }
+        } catch {
+          // Ignore parse errors and keep fallback message.
+        }
+        throw new Error(detail);
       }
       setNjMode("create");
       setEditingNjId(null);
       setNjForm(defaultNJForm());
       await handleSelectCustomer(selectedCustomerId);
-    } catch {
-      setNjError("Could not save NJ license.");
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : "Could not save NJ license.";
+      setNjError(message);
     } finally {
       setSavingNj(false);
     }
