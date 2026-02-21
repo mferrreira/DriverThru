@@ -101,6 +101,17 @@ export function normalizeString(value: string): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+export function maskUsDateInput(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) {
+    return digits;
+  }
+  if (digits.length <= 4) {
+    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  }
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
 export function normalizeDate(value: string): string | null {
   const trimmed = value.trim();
   if (trimmed.length === 0) {

@@ -3,6 +3,7 @@ import type { Dispatch, FormEvent, SetStateAction } from "react";
 
 import CollapsibleSection from "../CollapsibleSection";
 import { eyeColorOptions, genderOptions } from "../constants";
+import { maskUsDateInput } from "../formUtils";
 import type { AddressType, CustomerForm } from "../types";
 import CustomerPhotoField from "./CustomerPhotoField";
 
@@ -200,8 +201,12 @@ export default function CustomerCoreSection({
                 required
                 type="text"
                 placeholder="MM/DD/YYYY"
+                inputMode="numeric"
+                maxLength={10}
                 value={customerForm.date_of_birth}
-                onChange={(event) => setCustomerForm((prev) => ({ ...prev, date_of_birth: event.target.value }))}
+                onChange={(event) =>
+                  setCustomerForm((prev) => ({ ...prev, date_of_birth: maskUsDateInput(event.target.value) }))
+                }
                 className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
               />
             </label>
