@@ -5,7 +5,13 @@ from sqlalchemy.orm import Session
 
 from app.modules.customers.errors import CustomerNotFoundError
 from app.modules.customers.models import BrazilDriverLicense, Customer, CustomerAddress, NJDriverLicense, Passport
-from app.modules.customers.schemas import CustomerCreate, CustomerListResponse, CustomerUpdate, NJDriverLicenseCreate
+from app.modules.customers.schemas import (
+    CustomerAddressCreate,
+    CustomerCreate,
+    CustomerListResponse,
+    CustomerUpdate,
+    NJDriverLicenseCreate,
+)
 
 from .shared import get_customer_query
 
@@ -75,9 +81,13 @@ def create_customer(db: Session, payload: CustomerCreate) -> Customer:
 
 def update_customer(db: Session, customer_id: int, payload: CustomerUpdate) -> Customer:
     customer = get_customer_or_404(db, customer_id)
-    update_data = payload.model_dump(exclude_unset=True)
+    update_data = payload.model_dump(exclude_unset=True, exclude={"addresses"})
     for field, value in update_data.items():
         setattr(customer, field, value)
+
+    if payload.addresses is not None:
+        _sync_customer_addresses(customer, payload.addresses)
+
     db.commit()
     db.refresh(customer)
     return get_customer_or_404(db, customer.id)
@@ -99,3 +109,22 @@ def _build_nj_license_from_create(payload: NJDriverLicenseCreate) -> NJDriverLic
     nj_license.endorsements = [NJDriverLicenseEndorsement(code=item) for item in endorsement_codes]
     nj_license.restrictions = [NJDriverLicenseRestriction(code=item) for item in restriction_codes]
     return nj_license
+
+
+def _sync_customer_addresses(customer: Customer, addresses_payload: list[CustomerAddressCreate]) -> None:
+    existing_by_type = {address.address_type: address for address in customer.addresses}
+    incoming_by_type = {address.address_type: address for address in addresses_payload}
+
+    for address_type, incoming in incoming_by_type.items():
+        current = existing_by_type.get(address_type)
+        if current is None:
+            customer.addresses.append(CustomerAddress(**incoming.model_dump()))
+            continue
+        current.street = incoming.street
+        current.apt = incoming.apt
+        current.city = incoming.city
+        current.state = incoming.state
+        current.zip_code = incoming.zip_code
+        current.county = incoming.county
+
+    customer.addresses = [address for address in customer.addresses if address.address_type in incoming_by_type]

@@ -196,6 +196,7 @@ class CustomerUpdate(BaseModel):
     weight_lbs: Decimal | None = Field(default=None, gt=0)
     height_feet: int | None = Field(default=None, ge=0, le=8)
     height_inches: int | None = Field(default=None, ge=0, le=11)
+    addresses: list[CustomerAddressCreate] | None = None
     active: bool | None = None
 
 
