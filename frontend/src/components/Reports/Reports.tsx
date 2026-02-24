@@ -4,7 +4,15 @@ import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../lib/api";
 import { formatDateTimeUS } from "../../lib/utils";
 
-type ReportType = "all_customers" | "expiring_3_months";
+type ReportType =
+  | "all_customers"
+  | "expiring_3_months"
+  | "customers_without_active_driver_license"
+  | "passports_expiring_this_year"
+  | "customers_without_photo"
+  | "customers_without_phone"
+  | "customers_without_current_driver_license"
+  | "customers_outside_usa";
 type PendingItem = {
   customer_id: number;
   customer_name: string;
@@ -45,6 +53,57 @@ export default function Reports() {
   const [error, setError] = useState<string | null>(null);
   const [pendingRows, setPendingRows] = useState<PendingItem[]>([]);
 
+  const reportConfigs: Array<{ key: ReportType; label: string; path: string; fallback: string }> = [
+    {
+      key: "all_customers",
+      label: "Full Report (CSV)",
+      path: "/reports/customers.csv",
+      fallback: "customers_full_export.csv",
+    },
+    {
+      key: "expiring_3_months",
+      label: "Expiring Soon (CSV)",
+      path: "/reports/licenses-expiring.csv?months_ahead=3",
+      fallback: "licenses_expiring_3m.csv",
+    },
+    {
+      key: "customers_without_active_driver_license",
+      label: "No Active Driver License",
+      path: "/reports/customers-without-active-driver-license.csv",
+      fallback: "customers_without_active_driver_license.csv",
+    },
+    {
+      key: "passports_expiring_this_year",
+      label: "Passports Expiring This Year",
+      path: "/reports/passports-expiring-this-year.csv",
+      fallback: "passports_expiring_this_year.csv",
+    },
+    {
+      key: "customers_without_photo",
+      label: "Customers Without Photo",
+      path: "/reports/customers-without-photo.csv",
+      fallback: "customers_without_photo.csv",
+    },
+    {
+      key: "customers_without_phone",
+      label: "Customers Without Phone",
+      path: "/reports/customers-without-phone.csv",
+      fallback: "customers_without_phone.csv",
+    },
+    {
+      key: "customers_without_current_driver_license",
+      label: "No Current Driver License",
+      path: "/reports/customers-without-current-driver-license.csv",
+      fallback: "customers_without_current_driver_license.csv",
+    },
+    {
+      key: "customers_outside_usa",
+      label: "Customers Outside USA",
+      path: "/reports/customers-outside-usa.csv",
+      fallback: "customers_outside_usa.csv",
+    },
+  ];
+
   useEffect(() => {
     async function loadExpiringRows() {
       setLoadingTable(true);
@@ -72,14 +131,16 @@ export default function Reports() {
     setLoading(reportType);
     setError(null);
     try {
-      const path = reportType === "all_customers" ? "/reports/customers.csv" : "/reports/licenses-expiring.csv?months_ahead=3";
-      const response = await apiFetch(path, { method: "GET" });
+      const config = reportConfigs.find((item) => item.key === reportType);
+      if (!config) {
+        throw new Error("Unknown report type");
+      }
+      const response = await apiFetch(config.path, { method: "GET" });
       if (!response.ok) {
         throw new Error(`Failed to export report: ${response.status}`);
       }
       const blob = await response.blob();
-      const fallback = reportType === "all_customers" ? "customers_full_export.csv" : "licenses_expiring_3m.csv";
-      const fileName = extractFileName(response.headers.get("Content-Disposition"), fallback);
+      const fileName = extractFileName(response.headers.get("Content-Disposition"), config.fallback);
       triggerDownload(blob, fileName);
     } catch {
       setError("Could not generate the report. Please try again.");
@@ -136,67 +197,39 @@ export default function Reports() {
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-1">
           <h2 className="text-2xl font-semibold text-slate-900">Export Options</h2>
           <div className="mt-4 space-y-3">
-            <button
-              type="button"
-              onClick={() => void downloadCsv("all_customers")}
-              disabled={loading !== null}
-              className="inline-flex w-full items-center justify-between rounded-xl border border-slate-300 px-3 py-3 text-left text-slate-800 hover:bg-slate-50 disabled:opacity-60"
-            >
-              <span className="inline-flex items-center gap-2 font-semibold">
-                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden="true">
-                  <path
-                    d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                {loading === "all_customers" ? "Generating..." : "Full Report (CSV)"}
-              </span>
-              <span className="text-emerald-600">
-                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden="true">
-                  <path
-                    d="M6 2h9l5 5v15H6zM15 2v5h5M8 11h8M8 15h8M8 19h8"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => void downloadCsv("expiring_3_months")}
-              disabled={loading !== null}
-              className="inline-flex w-full items-center justify-between rounded-xl border border-slate-300 px-3 py-3 text-left text-slate-800 hover:bg-slate-50 disabled:opacity-60"
-            >
-              <span className="inline-flex items-center gap-2 font-semibold">
-                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden="true">
-                  <path
-                    d="M12 8v5l3 3M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                {loading === "expiring_3_months" ? "Generating..." : "Expiring Soon (CSV)"}
-              </span>
-              <span className="text-orange-600">
-                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden="true">
-                  <path
-                    d="M9 11h6m-6 4h4M7 3h10l4 4v14H7zM17 3v4h4"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-            </button>
+            {reportConfigs.map((report) => (
+              <button
+                key={report.key}
+                type="button"
+                onClick={() => void downloadCsv(report.key)}
+                disabled={loading !== null}
+                className="inline-flex w-full items-center justify-between rounded-xl border border-slate-300 px-3 py-3 text-left text-slate-800 hover:bg-slate-50 disabled:opacity-60"
+              >
+                <span className="inline-flex items-center gap-2 font-semibold">
+                  <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden="true">
+                    <path
+                      d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  {loading === report.key ? "Generating..." : report.label}
+                </span>
+                <span className="text-emerald-600">
+                  <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden="true">
+                    <path
+                      d="M6 2h9l5 5v15H6zM15 2v5h5M8 11h8M8 15h8M8 19h8"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+              </button>
+            ))}
           </div>
         </article>
 

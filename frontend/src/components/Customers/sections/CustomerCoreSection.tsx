@@ -79,10 +79,12 @@ type CustomerCoreSectionProps = {
   savingCustomer: boolean;
   customerPhotoUrl: string | null;
   uploadingPhoto: boolean;
+  deletingPhoto: boolean;
   photoError: string | null;
   onSubmit: (event: FormEvent) => void;
   onDeactivate: (customerId: number) => void;
   onUploadPhoto: (file: File) => void;
+  onDeletePhoto: () => void;
 };
 
 export default function CustomerCoreSection({
@@ -96,10 +98,12 @@ export default function CustomerCoreSection({
   savingCustomer,
   customerPhotoUrl,
   uploadingPhoto,
+  deletingPhoto,
   photoError,
   onSubmit,
   onDeactivate,
   onUploadPhoto,
+  onDeletePhoto,
 }: CustomerCoreSectionProps) {
   const [showMetricConverter, setShowMetricConverter] = useState(false);
   const [metricWeightKg, setMetricWeightKg] = useState("");
@@ -156,8 +160,10 @@ export default function CustomerCoreSection({
             hasPhoto={Boolean(customerForm.customer_photo_object_key)}
             photoUrl={customerPhotoUrl}
             uploadingPhoto={uploadingPhoto}
+            deletingPhoto={deletingPhoto}
             photoError={photoError}
             onUpload={onUploadPhoto}
+            onDelete={onDeletePhoto}
           />
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -376,7 +382,7 @@ export default function CustomerCoreSection({
                 onChange={(event) => setCustomerForm((prev) => ({ ...prev, has_left_country: event.target.checked }))}
                 className="mr-2"
               />
-              Customer left the country
+              Returned to home country
             </label>
             <label className="text-sm">
               <input

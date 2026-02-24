@@ -97,6 +97,28 @@ def get_customer_photo(customer: Customer) -> tuple[bytes, str, str]:
     return payload, content_type, Path(object_key).name
 
 
+def delete_customer_photo(db: Session, customer_id: int) -> Customer:
+    customer = get_customer_or_404(db=db, customer_id=customer_id)
+    object_key = customer.customer_photo_object_key
+    if not object_key:
+        raise CustomerPhotoNotFoundError(f"Customer {customer.id} has no photo")
+    if not object_key.startswith(f"{PHOTO_PREFIX}/"):
+        raise CustomerPhotoNotFoundError("Unsupported photo path")
+
+    client = get_minio_client()
+    try:
+        client.remove_object(settings.MINIO_BUCKET, object_key)
+    except S3Error as exc:
+        code = (getattr(exc, "code", None) or "").lower()
+        if code not in {"nosuchkey", "nosuchobject", "notfound"}:
+            raise ValueError("Could not delete photo right now. Please try again.") from exc
+
+    customer.customer_photo_object_key = None
+    db.commit()
+    db.refresh(customer)
+    return customer
+
+
 def _build_photo_object_key(customer_id: int, file_name: str | None, content_type: str) -> str:
     now = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     suffix = uuid4().hex[:10]

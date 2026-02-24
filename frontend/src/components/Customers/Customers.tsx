@@ -47,6 +47,7 @@ export default function Customers() {
     savingCustomer,
     customerPhotoUrl,
     uploadingPhoto,
+    deletingPhoto,
     photoError,
     loadCustomers,
     handleSelectCustomer,
@@ -54,6 +55,7 @@ export default function Customers() {
     submitCustomer,
     deactivateCustomer,
     uploadCustomerPhoto,
+    deleteCustomerPhoto,
   } = useCustomerCoreWithOptions({
     skipInitialAutoSelect: Boolean(searchParams.get("customerId")),
   });
@@ -688,10 +690,12 @@ export default function Customers() {
                 savingCustomer={savingCustomer}
                 customerPhotoUrl={customerPhotoUrl}
                 uploadingPhoto={uploadingPhoto}
+                deletingPhoto={deletingPhoto}
                 photoError={photoError}
                 onSubmit={(event) => void submitCustomer(event)}
                 onDeactivate={(customerId) => void deactivateCustomer(customerId)}
                 onUploadPhoto={(file) => void uploadCustomerPhoto(file)}
+                onDeletePhoto={() => void deleteCustomerPhoto()}
               />
 
               <NJLicensesSection
