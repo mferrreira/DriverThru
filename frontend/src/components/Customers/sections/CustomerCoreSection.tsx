@@ -372,6 +372,15 @@ export default function CustomerCoreSection({
             <label className="text-sm">
               <input
                 type="checkbox"
+                checked={customerForm.has_left_country}
+                onChange={(event) => setCustomerForm((prev) => ({ ...prev, has_left_country: event.target.checked }))}
+                className="mr-2"
+              />
+              Customer left the country
+            </label>
+            <label className="text-sm">
+              <input
+                type="checkbox"
                 checked={customerForm.has_no_ssn}
                 onChange={(event) => setCustomerForm((prev) => ({ ...prev, has_no_ssn: event.target.checked }))}
                 className="mr-2"

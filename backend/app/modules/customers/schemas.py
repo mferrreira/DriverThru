@@ -163,6 +163,7 @@ class CustomerBase(BaseModel):
     phone_number: str | None = Field(default=None, max_length=30)
     email: EmailStr | None = None
     date_of_birth: date
+    has_left_country: bool = False
     has_no_ssn: bool = False
     ssn_encrypted: str | None = None
     gender: Gender | None = None
@@ -189,6 +190,7 @@ class CustomerUpdate(BaseModel):
     phone_number: str | None = Field(default=None, max_length=30)
     email: EmailStr | None = None
     date_of_birth: date | None = None
+    has_left_country: bool | None = None
     has_no_ssn: bool | None = None
     ssn_encrypted: str | None = None
     gender: Gender | None = None
