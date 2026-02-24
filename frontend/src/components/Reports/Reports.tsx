@@ -56,13 +56,13 @@ export default function Reports() {
   const reportConfigs: Array<{ key: ReportType; label: string; path: string; fallback: string }> = [
     {
       key: "all_customers",
-      label: "Full Report (CSV)",
+      label: "Full Report",
       path: "/reports/customers.csv",
       fallback: "customers_full_export.csv",
     },
     {
       key: "expiring_3_months",
-      label: "Expiring Soon (CSV)",
+      label: "Expiring Soon",
       path: "/reports/licenses-expiring.csv?months_ahead=3",
       fallback: "licenses_expiring_3m.csv",
     },
