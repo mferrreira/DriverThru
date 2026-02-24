@@ -30,6 +30,7 @@ export function defaultCustomerForm(): CustomerForm {
     phone_number: "",
     email: "",
     date_of_birth: "",
+    has_left_country: false,
     has_no_ssn: false,
     ssn_encrypted: "",
     gender: "",

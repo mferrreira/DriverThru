@@ -3,8 +3,10 @@ type CustomerPhotoFieldProps = {
   hasPhoto: boolean;
   photoUrl: string | null;
   uploadingPhoto: boolean;
+  deletingPhoto: boolean;
   photoError: string | null;
   onUpload: (file: File) => void;
+  onDelete: () => void;
 };
 
 export default function CustomerPhotoField({
@@ -12,10 +14,13 @@ export default function CustomerPhotoField({
   hasPhoto,
   photoUrl,
   uploadingPhoto,
+  deletingPhoto,
   photoError,
   onUpload,
+  onDelete,
 }: CustomerPhotoFieldProps) {
   const canUpload = selectedCustomerId !== null;
+  const canDelete = canUpload && hasPhoto && !uploadingPhoto && !deletingPhoto;
   const previewable = hasPhoto && photoUrl && !/\.hei[cf](\?|$)/i.test(photoUrl);
 
   return (
@@ -50,8 +55,17 @@ export default function CustomerPhotoField({
             }}
             className="w-full text-sm file:mr-3 file:rounded-md file:border file:border-slate-300 file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-slate-50 disabled:opacity-50"
           />
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={!canDelete}
+            className="rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {deletingPhoto ? "Deleting photo..." : "Delete photo"}
+          </button>
           {!canUpload ? <p className="text-xs text-amber-700">Create the customer first, then upload photo.</p> : null}
           {uploadingPhoto ? <p className="text-xs text-slate-600">Uploading photo...</p> : null}
+          {deletingPhoto ? <p className="text-xs text-slate-600">Deleting photo...</p> : null}
           {photoError ? <p className="text-xs text-red-600">{photoError}</p> : null}
         </div>
       </div>

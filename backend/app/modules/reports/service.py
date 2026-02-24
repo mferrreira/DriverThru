@@ -5,7 +5,7 @@ from datetime import UTC, date, datetime, timedelta
 from io import StringIO
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.modules.customers.models import BrazilDriverLicense, Customer, CustomerAddress, NJDriverLicense, Passport
@@ -260,8 +260,263 @@ def build_expiring_licenses_csv(db: Session, months_ahead: int = 3) -> tuple[str
     return content, filename
 
 
+def build_customers_without_active_driver_license_csv(db: Session) -> tuple[str, str]:
+    customers = list(_select_active_customers(db))
+    rows = []
+    for customer in customers:
+        active_nj = [item for item in customer.nj_driver_licenses if item.active]
+        active_br = [item for item in customer.brazil_driver_licenses if item.active]
+        if active_nj or active_br:
+            continue
+        rows.append(
+            [
+                customer.id,
+                f"{customer.first_name} {customer.last_name}".strip(),
+                customer.email or "",
+                customer.phone_number or "",
+                0,
+                0,
+                _format_datetime(customer.created_at),
+                _format_datetime(customer.updated_at),
+            ]
+        )
+    return _csv_report(
+        header=[
+            "Customer ID",
+            "Customer name",
+            "Email",
+            "Phone",
+            "Active NJ licenses",
+            "Active Brazil licenses",
+            "Created at",
+            "Updated at",
+        ],
+        rows=rows,
+        filename_prefix="customers_without_active_driver_license",
+    )
+
+
+def build_passports_expiring_this_year_csv(db: Session) -> tuple[str, str]:
+    today = datetime.now(UTC).date()
+    start = date(today.year, 1, 1)
+    end = date(today.year, 12, 31)
+    stmt = (
+        select(Customer, Passport)
+        .join(Passport, Passport.customer_id == Customer.id)
+        .where(
+            Customer.active.is_(True),
+            Passport.active.is_(True),
+            Passport.expiration_date.is_not(None),
+            Passport.expiration_date >= start,
+            Passport.expiration_date <= end,
+        )
+        .order_by(Passport.expiration_date.asc(), Customer.last_name.asc(), Customer.first_name.asc())
+    )
+    rows = []
+    for customer, passport in db.execute(stmt).all():
+        expiration_date = passport.expiration_date
+        rows.append(
+            [
+                customer.id,
+                f"{customer.first_name} {customer.last_name}".strip(),
+                customer.email or "",
+                customer.phone_number or "",
+                passport.id,
+                _format_bool(passport.is_current),
+                passport.passport_number_encrypted or "",
+                passport.document_type or "",
+                passport.issuing_country or "",
+                passport.nationality or "",
+                _format_date(passport.issue_date),
+                _format_date(expiration_date),
+                (expiration_date - today).days if expiration_date else "",
+            ]
+        )
+    return _csv_report(
+        header=[
+            "Customer ID",
+            "Customer name",
+            "Email",
+            "Phone",
+            "Passport ID",
+            "Is current",
+            "Passport number",
+            "Document type",
+            "Issuing country",
+            "Nationality",
+            "Issue date",
+            "Expiration date",
+            "Days until expiration",
+        ],
+        rows=rows,
+        filename_prefix=f"passports_expiring_{today.year}",
+    )
+
+
+def build_customers_without_photo_csv(db: Session) -> tuple[str, str]:
+    stmt = (
+        select(Customer)
+        .where(
+            Customer.active.is_(True),
+            or_(
+                Customer.customer_photo_object_key.is_(None),
+                func.length(func.trim(Customer.customer_photo_object_key)) == 0,
+            ),
+        )
+        .order_by(Customer.last_name.asc(), Customer.first_name.asc())
+    )
+    rows = [_customer_basic_row(customer) for customer in db.scalars(stmt).all()]
+    return _csv_report(
+        header=_customer_basic_header(),
+        rows=rows,
+        filename_prefix="customers_without_photo",
+    )
+
+
+def build_customers_without_phone_csv(db: Session) -> tuple[str, str]:
+    stmt = (
+        select(Customer)
+        .where(
+            Customer.active.is_(True),
+            or_(
+                Customer.phone_number.is_(None),
+                func.length(func.trim(Customer.phone_number)) == 0,
+            ),
+        )
+        .order_by(Customer.last_name.asc(), Customer.first_name.asc())
+    )
+    rows = [_customer_basic_row(customer) for customer in db.scalars(stmt).all()]
+    return _csv_report(
+        header=_customer_basic_header(),
+        rows=rows,
+        filename_prefix="customers_without_phone",
+    )
+
+
+def build_customers_without_current_driver_license_csv(db: Session) -> tuple[str, str]:
+    customers = list(_select_active_customers(db))
+    rows = []
+    for customer in customers:
+        active_nj = [item for item in customer.nj_driver_licenses if item.active]
+        active_br = [item for item in customer.brazil_driver_licenses if item.active]
+        has_current = any(item.is_current for item in active_nj) or any(item.is_current for item in active_br)
+        if has_current:
+            continue
+        rows.append(
+            [
+                customer.id,
+                f"{customer.first_name} {customer.last_name}".strip(),
+                customer.email or "",
+                customer.phone_number or "",
+                len(active_nj),
+                len(active_br),
+                _format_datetime(customer.created_at),
+                _format_datetime(customer.updated_at),
+            ]
+        )
+    return _csv_report(
+        header=[
+            "Customer ID",
+            "Customer name",
+            "Email",
+            "Phone",
+            "Active NJ licenses",
+            "Active Brazil licenses",
+            "Created at",
+            "Updated at",
+        ],
+        rows=rows,
+        filename_prefix="customers_without_current_driver_license",
+    )
+
+
+def build_customers_returned_home_country_csv(db: Session) -> tuple[str, str]:
+    stmt = (
+        select(Customer)
+        .where(
+            Customer.active.is_(True),
+            Customer.has_left_country.is_(True),
+        )
+        .order_by(Customer.last_name.asc(), Customer.first_name.asc())
+    )
+    rows = [
+        [
+            customer.id,
+            f"{customer.first_name} {customer.last_name}".strip(),
+            customer.email or "",
+            customer.phone_number or "",
+            _format_bool(customer.has_left_country),
+            _format_datetime(customer.created_at),
+            _format_datetime(customer.updated_at),
+        ]
+        for customer in db.scalars(stmt).all()
+    ]
+    return _csv_report(
+        header=[
+            "Customer ID",
+            "Customer name",
+            "Email",
+            "Phone",
+            "Returned to home country",
+            "Created at",
+            "Updated at",
+        ],
+        rows=rows,
+        filename_prefix="customers_outside_usa",
+    )
+
+
 def _add_months(initial_date: date, months: int) -> date:
     return initial_date + timedelta(days=31 * months)
+
+
+def _select_active_customers(db: Session) -> list[Customer]:
+    stmt = (
+        select(Customer)
+        .where(Customer.active.is_(True))
+        .options(
+            selectinload(Customer.nj_driver_licenses),
+            selectinload(Customer.brazil_driver_licenses),
+        )
+        .order_by(Customer.last_name.asc(), Customer.first_name.asc())
+    )
+    return list(db.scalars(stmt).all())
+
+
+def _customer_basic_header() -> list[str]:
+    return [
+        "Customer ID",
+        "Customer name",
+        "Email",
+        "Phone",
+        "Date of birth",
+        "Returned to home country",
+        "Created at",
+        "Updated at",
+    ]
+
+
+def _customer_basic_row(customer: Customer) -> list[Any]:
+    return [
+        customer.id,
+        f"{customer.first_name} {customer.last_name}".strip(),
+        customer.email or "",
+        customer.phone_number or "",
+        _format_date(customer.date_of_birth),
+        _format_bool(customer.has_left_country),
+        _format_datetime(customer.created_at),
+        _format_datetime(customer.updated_at),
+    ]
+
+
+def _csv_report(header: list[str], rows: list[list[Any]], filename_prefix: str) -> tuple[str, str]:
+    buffer = StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(header)
+    writer.writerows(rows)
+    content = buffer.getvalue()
+    filename = f"{filename_prefix}_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.csv"
+    return content, filename
 
 
 def _format_date(value: date | None) -> str:

@@ -98,6 +98,7 @@ export type CustomerRead = {
   phone_number: string | null;
   email: string | null;
   date_of_birth: string;
+  has_left_country: boolean;
   has_no_ssn: boolean;
   ssn_encrypted: string | null;
   gender: Gender | null;
@@ -129,6 +130,7 @@ export type CustomerForm = {
   phone_number: string;
   email: string;
   date_of_birth: string;
+  has_left_country: boolean;
   has_no_ssn: boolean;
   ssn_encrypted: string;
   gender: "" | Gender;

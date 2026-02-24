@@ -30,6 +30,7 @@ type UseCustomerCoreResult = {
   savingCustomer: boolean;
   customerPhotoUrl: string | null;
   uploadingPhoto: boolean;
+  deletingPhoto: boolean;
   photoError: string | null;
   loadCustomers: (queryOverride?: string, options?: { skipAutoSelect?: boolean }) => Promise<void>;
   handleSelectCustomer: (customerId: number) => Promise<void>;
@@ -37,6 +38,7 @@ type UseCustomerCoreResult = {
   submitCustomer: (event: FormEvent) => Promise<void>;
   deactivateCustomer: (customerId: number) => Promise<void>;
   uploadCustomerPhoto: (file: File) => Promise<void>;
+  deleteCustomerPhoto: () => Promise<void>;
 };
 
 export function useCustomerCore(): UseCustomerCoreResult {
@@ -62,6 +64,7 @@ export function useCustomerCoreWithOptions(options: UseCustomerCoreOptions = {})
   const [customerSuccess, setCustomerSuccess] = useState<string | null>(null);
   const [savingCustomer, setSavingCustomer] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [deletingPhoto, setDeletingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [photoVersion, setPhotoVersion] = useState(0);
 
@@ -134,6 +137,7 @@ export function useCustomerCoreWithOptions(options: UseCustomerCoreOptions = {})
         phone_number: data.phone_number ?? "",
         email: data.email ?? "",
         date_of_birth: formatDateForForm(data.date_of_birth),
+        has_left_country: data.has_left_country,
         has_no_ssn: data.has_no_ssn,
         ssn_encrypted: data.ssn_encrypted ?? "",
         gender: data.gender ?? "",
@@ -228,6 +232,7 @@ export function useCustomerCoreWithOptions(options: UseCustomerCoreOptions = {})
         phone_number: normalizeString(customerForm.phone_number),
         email: normalizeString(customerForm.email),
         date_of_birth: normalizeDate(customerForm.date_of_birth),
+        has_left_country: customerForm.has_left_country,
         has_no_ssn: customerForm.has_no_ssn,
         ssn_encrypted: customerForm.has_no_ssn ? null : normalizeString(customerForm.ssn_encrypted),
         gender: customerForm.gender || null,
@@ -336,6 +341,50 @@ export function useCustomerCoreWithOptions(options: UseCustomerCoreOptions = {})
     }
   }
 
+  async function deleteCustomerPhoto() {
+    if (!selectedCustomerId) {
+      setPhotoError("Select a customer before deleting the photo.");
+      return;
+    }
+    const ok = window.confirm("Delete this customer photo?");
+    if (!ok) {
+      return;
+    }
+    setDeletingPhoto(true);
+    setPhotoError(null);
+    setCustomerSuccess(null);
+    try {
+      const response = await apiFetch(`/customers/${selectedCustomerId}/photo`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        let backendMessage = `Failed to delete photo: ${response.status}`;
+        try {
+          const data = (await response.json()) as { detail?: unknown };
+          if (typeof data.detail === "string") {
+            backendMessage = data.detail;
+          }
+        } catch {
+          // Keep default message.
+        }
+        throw new Error(backendMessage);
+      }
+      const updated = (await response.json()) as CustomerRead;
+      setSelectedCustomer(updated);
+      setCustomerForm((prev) => ({
+        ...prev,
+        customer_photo_object_key: updated.customer_photo_object_key ?? "",
+      }));
+      setPhotoVersion((prev) => prev + 1);
+      setCustomerSuccess("Customer photo deleted successfully.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not delete customer photo.";
+      setPhotoError(message);
+    } finally {
+      setDeletingPhoto(false);
+    }
+  }
+
   return {
     customers,
     search,
@@ -353,6 +402,7 @@ export function useCustomerCoreWithOptions(options: UseCustomerCoreOptions = {})
     savingCustomer,
     customerPhotoUrl,
     uploadingPhoto,
+    deletingPhoto,
     photoError,
     loadCustomers,
     handleSelectCustomer,
@@ -360,5 +410,6 @@ export function useCustomerCoreWithOptions(options: UseCustomerCoreOptions = {})
     submitCustomer,
     deactivateCustomer,
     uploadCustomerPhoto,
+    deleteCustomerPhoto,
   };
 }

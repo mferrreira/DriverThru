@@ -9,6 +9,7 @@ from app.api.deps import get_db
 from app.modules.customers.schemas import CustomerCreate, CustomerListResponse, CustomerRead, CustomerUpdate
 from app.modules.customers.services import (
     create_customer,
+    delete_customer_photo,
     deactivate_customer,
     get_customer_or_404,
     get_customer_photo,
@@ -86,6 +87,16 @@ async def upload_customer_photo_route(
             file_name=file.filename,
             content_type=file.content_type,
         )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise_not_found(exc)
+
+
+@router.delete("/{customer_id}/photo", response_model=CustomerRead)
+def delete_customer_photo_route(customer_id: int, db: Session = Depends(get_db)) -> CustomerRead:
+    try:
+        return delete_customer_photo(db=db, customer_id=customer_id)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001

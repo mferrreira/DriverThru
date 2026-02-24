@@ -47,6 +47,7 @@ class Customer(TimestampMixin, Base):
     phone_number: Mapped[str | None] = mapped_column(String(30))
     email: Mapped[str | None] = mapped_column(String(255), index=True)
     date_of_birth: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    has_left_country: Mapped[bool] = mapped_column(default=False, nullable=False)
     has_no_ssn: Mapped[bool] = mapped_column(default=False, nullable=False)
     ssn_encrypted: Mapped[str | None] = mapped_column(Text)
     gender: Mapped[Gender | None] = mapped_column(Enum(Gender, native_enum=False))
