@@ -9,6 +9,7 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Integer,
+    String,
     Text,
     UniqueConstraint,
 )
@@ -37,6 +38,7 @@ class NJDriverLicense(TimestampMixin, Base):
         index=True,
     )
     license_number_encrypted: Mapped[str | None] = mapped_column(Text)
+    document_file_object_key: Mapped[str | None] = mapped_column(String(255))
     issue_date: Mapped[date | None] = mapped_column(Date)
     expiration_date: Mapped[date | None] = mapped_column(Date)
     license_class: Mapped[NJLicenseClass | None] = mapped_column(

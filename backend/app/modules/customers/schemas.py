@@ -52,6 +52,7 @@ class NJDriverLicenseCreate(NJDriverLicenseBase):
     license_number_encrypted: str | None = None
     endorsements: list[NJEndorsementCode] = Field(default_factory=list)
     restrictions: list[NJRestrictionCode] = Field(default_factory=list)
+    staged_document_file_object_key: str | None = None
 
 
 class NJDriverLicenseEndorsementRead(ORMModel):
@@ -68,6 +69,7 @@ class NJDriverLicenseRead(NJDriverLicenseBase, ORMModel):
     id: int
     customer_id: int
     license_number_encrypted: str | None = None
+    document_file_object_key: str | None = None
     endorsements: list[NJDriverLicenseEndorsementRead] = Field(default_factory=list)
     restrictions: list[NJDriverLicenseRestrictionRead] = Field(default_factory=list)
     created_at: datetime
@@ -104,12 +106,14 @@ class BrazilDriverLicenseBase(BaseModel):
 
 class BrazilDriverLicenseCreate(BrazilDriverLicenseBase):
     cpf_encrypted: str | None = None
+    staged_document_file_object_key: str | None = None
 
 
 class BrazilDriverLicenseRead(BrazilDriverLicenseBase, ORMModel):
     id: int
     customer_id: int
     cpf_encrypted: str | None = None
+    document_file_object_key: str | None = None
     created_at: datetime
     updated_at: datetime
     active: bool
@@ -138,12 +142,20 @@ class PassportBase(BaseModel):
 
 class PassportCreate(PassportBase):
     passport_number_encrypted: str
+    staged_document_file_object_key: str | None = None
+
+
+class StagedDocumentFileResponse(BaseModel):
+    object_key: str
+    file_name: str
+    content_type: str
 
 
 class PassportRead(PassportBase, ORMModel):
     id: int
     customer_id: int
     passport_number_encrypted: str
+    document_file_object_key: str | None = None
     created_at: datetime
     updated_at: datetime
     active: bool
@@ -161,6 +173,7 @@ class CustomerBase(BaseModel):
     last_name: str = Field(max_length=120)
     suffix: str | None = Field(default=None, max_length=30)
     phone_number: str | None = Field(default=None, max_length=30)
+    instagram_handle: str | None = Field(default=None, max_length=80)
     email: EmailStr | None = None
     date_of_birth: date
     has_left_country: bool = False
@@ -188,6 +201,7 @@ class CustomerUpdate(BaseModel):
     last_name: str | None = Field(default=None, max_length=120)
     suffix: str | None = Field(default=None, max_length=30)
     phone_number: str | None = Field(default=None, max_length=30)
+    instagram_handle: str | None = Field(default=None, max_length=80)
     email: EmailStr | None = None
     date_of_birth: date | None = None
     has_left_country: bool | None = None
@@ -220,6 +234,7 @@ class CustomerListItem(ORMModel):
     customer_photo_object_key: str | None = None
     last_name: str
     phone_number: str | None = None
+    instagram_handle: str | None = None
     email: EmailStr | None = None
     date_of_birth: date
     active: bool

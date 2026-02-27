@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from io import BytesIO
+import logging
 from pathlib import Path
 import re
 from uuid import uuid4
 
 from minio.error import S3Error
 from PIL import Image, ImageOps
-from pillow_heif import register_heif_opener
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -18,20 +18,29 @@ from app.modules.customers.models import Customer
 
 from .customers import get_customer_or_404
 
+logger = logging.getLogger(__name__)
+
+try:
+    from pillow_heif import register_heif_opener
+except ImportError:  # pragma: no cover
+    register_heif_opener = None
+
 ALLOWED_PHOTO_CONTENT_TYPES = {
     "image/jpeg",
     "image/jpg",
     "image/png",
     "image/webp",
-    "image/heic",
-    "image/heif",
 }
 PHOTO_PREFIX = "customer-photos"
 MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024
 MAX_IMAGE_DIMENSION = 1800
 OUTPUT_WEBP_QUALITY = 82
 
-register_heif_opener()
+if register_heif_opener is not None:
+    register_heif_opener()
+    ALLOWED_PHOTO_CONTENT_TYPES.update({"image/heic", "image/heif"})
+else:
+    logger.warning("pillow_heif not installed; HEIC/HEIF customer photo uploads are disabled")
 
 
 def upload_customer_photo(
@@ -43,6 +52,8 @@ def upload_customer_photo(
 ) -> Customer:
     customer = get_customer_or_404(db=db, customer_id=customer_id)
     safe_content_type = _resolve_content_type(file_name=file_name, content_type=content_type)
+    if safe_content_type in {"image/heic", "image/heif"} and register_heif_opener is None:
+        raise ValueError("HEIC/HEIF upload support is unavailable right now. Use JPG, PNG, or WEBP.")
     if safe_content_type not in ALLOWED_PHOTO_CONTENT_TYPES:
         raise ValueError("Unsupported file type. Use JPG, PNG, WEBP, HEIC, or HEIF.")
     if not payload:

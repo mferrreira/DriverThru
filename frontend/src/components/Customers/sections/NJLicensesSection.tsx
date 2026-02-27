@@ -2,6 +2,7 @@ import type { Dispatch, FormEvent, SetStateAction } from "react";
 import { Trash2 } from "lucide-react";
 
 import CollapsibleSection from "../CollapsibleSection";
+import DocumentFileField from "./DocumentFileField";
 import { njClassOptions, njEndorsementOptions, njRestrictionOptions } from "../constants";
 import type { CustomerRead, NJDriverLicense, NJEndorsement, NJForm, NJRestriction } from "../types";
 
@@ -18,8 +19,22 @@ type NJLicensesSectionProps = {
   onDelete: (licenseId: number) => void;
   onStartEdit: (item: NJDriverLicense) => void;
   onStartRenew: (item: NJDriverLicense) => void;
+  onStartCreate: () => void;
   onToggleEndorsement: (code: NJEndorsement) => void;
   onToggleRestriction: (code: NJRestriction) => void;
+  onApplyOcrPrefill: () => void;
+  ocrLoading: boolean;
+  ocrInfo?: string | null;
+  fileRecordId: number | null;
+  fileObjectKey: string | null;
+  fileUrl: string | null;
+  uploadingFile: boolean;
+  deletingFile: boolean;
+  fileError: string | null;
+  onUploadFile: (file: File) => void;
+  onDeleteFile: () => void;
+  usePrefillOnUpload: boolean;
+  onToggleUsePrefillOnUpload: (checked: boolean) => void;
 };
 
 export default function NJLicensesSection({
@@ -35,12 +50,37 @@ export default function NJLicensesSection({
   onDelete,
   onStartEdit,
   onStartRenew,
+  onStartCreate,
   onToggleEndorsement,
   onToggleRestriction,
+  onApplyOcrPrefill,
+  ocrLoading,
+  ocrInfo,
+  fileRecordId,
+  fileObjectKey,
+  fileUrl,
+  uploadingFile,
+  deletingFile,
+  fileError,
+  onUploadFile,
+  onDeleteFile,
+  usePrefillOnUpload,
+  onToggleUsePrefillOnUpload,
 }: NJLicensesSectionProps) {
   return (
     <section className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm backdrop-blur-sm">
-      <h3 className="text-lg font-semibold text-zinc-900">NJ Driver Licenses</h3>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-lg font-semibold text-zinc-900">NJ Driver Licenses</h3>
+        {njMode !== "create" ? (
+          <button
+            type="button"
+            onClick={onStartCreate}
+            className="rounded-md bg-linear-to-r from-sky-700 to-blue-700 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:brightness-110"
+          >
+            Add new NJ license
+          </button>
+        ) : null}
+      </div>
       <p className="mt-1 text-sm text-zinc-500">Class, endorsements, and restrictions with renewal history.</p>
       {selectedCustomer ? (
         <div className="mt-4 space-y-2">
@@ -95,7 +135,41 @@ export default function NJLicensesSection({
       )}
 
       <CollapsibleSection title="NJ license form" subtitle="Create, edit, and renew" defaultOpen={njMode !== "create"}>
+        <div className="mb-3 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onApplyOcrPrefill}
+            disabled={ocrLoading || !selectedCustomerId}
+            className="rounded-md border border-violet-300 px-3 py-2 text-sm font-medium text-violet-800 hover:bg-violet-50 disabled:opacity-60"
+          >
+            {ocrLoading ? "Reading..." : "OCR Prefill NJ License"}
+          </button>
+        </div>
+        {ocrInfo ? <p className="mb-3 text-xs text-slate-500">{ocrInfo}</p> : null}
         <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-2">
+          <label className="text-sm sm:col-span-2">
+            <input
+              type="checkbox"
+              checked={usePrefillOnUpload}
+              onChange={(event) => onToggleUsePrefillOnUpload(event.target.checked)}
+              className="mr-2"
+            />
+            Use OCR prefill automatically when uploading file (default off)
+          </label>
+          <DocumentFileField
+            title="NJ license file"
+            recordLabel="NJ license"
+            recordId={fileRecordId}
+            canUpload={selectedCustomerId !== null}
+            noUploadHint="Create/select a customer first. File can be uploaded before saving the NJ license."
+            fileObjectKey={fileObjectKey}
+            fileUrl={fileUrl}
+            uploading={uploadingFile}
+            deleting={deletingFile}
+            error={fileError}
+            onUpload={onUploadFile}
+            onDelete={onDeleteFile}
+          />
           <label className="text-sm">
             License number
             <input

@@ -45,6 +45,7 @@ class Customer(TimestampMixin, Base):
     last_name: Mapped[str] = mapped_column(String(120), nullable=False)
     suffix: Mapped[str | None] = mapped_column(String(30))
     phone_number: Mapped[str | None] = mapped_column(String(30))
+    instagram_handle: Mapped[str | None] = mapped_column(String(80))
     email: Mapped[str | None] = mapped_column(String(255), index=True)
     date_of_birth: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     has_left_country: Mapped[bool] = mapped_column(default=False, nullable=False)

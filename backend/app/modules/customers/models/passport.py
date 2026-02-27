@@ -30,6 +30,7 @@ class Passport(TimestampMixin, Base):
         index=True,
     )
     document_type: Mapped[str | None] = mapped_column(String(50))
+    document_file_object_key: Mapped[str | None] = mapped_column(String(255))
     issuing_country: Mapped[str | None] = mapped_column(String(80))
     passport_number_encrypted: Mapped[str] = mapped_column(Text, nullable=False)
     surname: Mapped[str] = mapped_column(String(120), nullable=False)

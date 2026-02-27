@@ -28,6 +28,7 @@ export function defaultCustomerForm(): CustomerForm {
     last_name: "",
     suffix: "",
     phone_number: "",
+    instagram_handle: "",
     email: "",
     date_of_birth: "",
     has_left_country: false,

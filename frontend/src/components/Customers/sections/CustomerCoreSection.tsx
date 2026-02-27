@@ -85,6 +85,9 @@ type CustomerCoreSectionProps = {
   onDeactivate: (customerId: number) => void;
   onUploadPhoto: (file: File) => void;
   onDeletePhoto: () => void;
+  onApplyOcrPrefill: () => void;
+  ocrLoading: boolean;
+  ocrInfo?: string | null;
 };
 
 export default function CustomerCoreSection({
@@ -104,6 +107,9 @@ export default function CustomerCoreSection({
   onDeactivate,
   onUploadPhoto,
   onDeletePhoto,
+  onApplyOcrPrefill,
+  ocrLoading,
+  ocrInfo,
 }: CustomerCoreSectionProps) {
   const [showMetricConverter, setShowMetricConverter] = useState(false);
   const [metricWeightKg, setMetricWeightKg] = useState("");
@@ -154,6 +160,17 @@ export default function CustomerCoreSection({
         subtitle="Expand to create/edit core customer data and addresses"
 
       >
+        <div className="mb-3 flex justify-end">
+          <button
+            type="button"
+            onClick={onApplyOcrPrefill}
+            disabled={ocrLoading}
+            className="rounded-md border border-violet-300 px-3 py-2 text-sm font-medium text-violet-800 hover:bg-violet-50 disabled:opacity-60"
+          >
+            {ocrLoading ? "Reading..." : "OCR Prefill Customer"}
+          </button>
+        </div>
+        {ocrInfo ? <p className="mb-3 text-xs text-slate-500">{ocrInfo}</p> : null}
         <form onSubmit={onSubmit} className="space-y-4 py-2">
           <CustomerPhotoField
             selectedCustomerId={selectedCustomerId}
@@ -360,6 +377,14 @@ export default function CustomerCoreSection({
               <input
                 value={customerForm.phone_number}
                 onChange={(event) => setCustomerForm((prev) => ({ ...prev, phone_number: event.target.value }))}
+                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              />
+            </label>
+            <label className="text-sm">
+              Instagram (@handle)
+              <input
+                value={customerForm.instagram_handle}
+                onChange={(event) => setCustomerForm((prev) => ({ ...prev, instagram_handle: event.target.value }))}
                 className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
               />
             </label>

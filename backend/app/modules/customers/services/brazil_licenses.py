@@ -8,6 +8,7 @@ from app.modules.customers.models import BrazilDriverLicense
 from app.modules.customers.schemas import BrazilDriverLicenseCreate, BrazilDriverLicenseUpdate
 
 from .customers import get_customer_or_404
+from .document_files import finalize_staged_document_file_for_brazil_license
 from .shared import clear_current_flags
 
 
@@ -41,9 +42,19 @@ def create_brazil_license(db: Session, customer_id: int, payload: BrazilDriverLi
     get_customer_or_404(db, customer_id)
     if payload.is_current:
         clear_current_flags(db, model=BrazilDriverLicense, customer_id=customer_id)
-    license_obj = BrazilDriverLicense(customer_id=customer_id, **payload.model_dump())
+    license_obj = BrazilDriverLicense(
+        customer_id=customer_id,
+        **payload.model_dump(exclude={"staged_document_file_object_key"}),
+    )
     db.add(license_obj)
     db.commit()
+    if payload.staged_document_file_object_key:
+        license_obj.document_file_object_key = finalize_staged_document_file_for_brazil_license(
+            customer_id=customer_id,
+            license_id=license_obj.id,
+            staged_object_key=payload.staged_document_file_object_key,
+        )
+        db.commit()
     db.refresh(license_obj)
     return license_obj
 
@@ -73,11 +84,18 @@ def renew_brazil_license(
 ) -> BrazilDriverLicense:
     current = get_brazil_license_or_404(db, customer_id, license_id)
     current.is_current = False
-    data = payload.model_dump()
+    data = payload.model_dump(exclude={"staged_document_file_object_key"})
     data["is_current"] = True
     new_license = BrazilDriverLicense(customer_id=customer_id, **data)
     db.add(new_license)
     db.commit()
+    if payload.staged_document_file_object_key:
+        new_license.document_file_object_key = finalize_staged_document_file_for_brazil_license(
+            customer_id=customer_id,
+            license_id=new_license.id,
+            staged_object_key=payload.staged_document_file_object_key,
+        )
+        db.commit()
     db.refresh(new_license)
     return new_license
 

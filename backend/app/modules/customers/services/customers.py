@@ -31,6 +31,7 @@ def list_customers(
                 Customer.last_name.ilike(term),
                 Customer.email.ilike(term),
                 Customer.phone_number.ilike(term),
+                Customer.instagram_handle.ilike(term),
             )
         )
 

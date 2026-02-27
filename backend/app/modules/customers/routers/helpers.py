@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.modules.customers.errors import (
     CustomerNotFoundError,
+    CustomerDocumentFileNotFoundError,
     CustomerPhotoNotFoundError,
     LicenseNotFoundError,
     PassportNotFoundError,
@@ -13,7 +14,16 @@ from app.modules.customers.errors import (
 
 
 def raise_not_found(exc: Exception) -> None:
-    if isinstance(exc, (CustomerNotFoundError, CustomerPhotoNotFoundError, LicenseNotFoundError, PassportNotFoundError)):
+    if isinstance(
+        exc,
+        (
+            CustomerNotFoundError,
+            CustomerPhotoNotFoundError,
+            CustomerDocumentFileNotFoundError,
+            LicenseNotFoundError,
+            PassportNotFoundError,
+        ),
+    ):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     raise exc
 

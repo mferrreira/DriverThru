@@ -2,6 +2,7 @@ import type { Dispatch, FormEvent, SetStateAction } from "react";
 import { Trash2 } from "lucide-react";
 
 import CollapsibleSection from "../CollapsibleSection";
+import DocumentFileField from "./DocumentFileField";
 import type { CustomerRead, Passport, PassportForm } from "../types";
 
 type PassportsSectionProps = {
@@ -17,6 +18,20 @@ type PassportsSectionProps = {
   onDelete: (passportId: number) => void;
   onStartEdit: (item: Passport) => void;
   onStartRenew: (item: Passport) => void;
+  onStartCreate: () => void;
+  onApplyOcrPrefill: () => void;
+  ocrLoading: boolean;
+  ocrInfo?: string | null;
+  fileRecordId: number | null;
+  fileObjectKey: string | null;
+  fileUrl: string | null;
+  uploadingFile: boolean;
+  deletingFile: boolean;
+  fileError: string | null;
+  onUploadFile: (file: File) => void;
+  onDeleteFile: () => void;
+  usePrefillOnUpload: boolean;
+  onToggleUsePrefillOnUpload: (checked: boolean) => void;
 };
 
 export default function PassportsSection({
@@ -32,10 +47,35 @@ export default function PassportsSection({
   onDelete,
   onStartEdit,
   onStartRenew,
+  onStartCreate,
+  onApplyOcrPrefill,
+  ocrLoading,
+  ocrInfo,
+  fileRecordId,
+  fileObjectKey,
+  fileUrl,
+  uploadingFile,
+  deletingFile,
+  fileError,
+  onUploadFile,
+  onDeleteFile,
+  usePrefillOnUpload,
+  onToggleUsePrefillOnUpload,
 }: PassportsSectionProps) {
   return (
     <section className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm backdrop-blur-sm">
-      <h3 className="text-lg font-semibold text-zinc-900">Passports</h3>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-lg font-semibold text-zinc-900">Passports</h3>
+        {passportMode !== "create" ? (
+          <button
+            type="button"
+            onClick={onStartCreate}
+            className="rounded-md bg-linear-to-r from-sky-700 to-blue-700 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:brightness-110"
+          >
+            Add new passport
+          </button>
+        ) : null}
+      </div>
       {selectedCustomer ? (
         <div className="mt-4 space-y-2">
           {selectedCustomer.passports.map((item) => (
@@ -89,7 +129,41 @@ export default function PassportsSection({
       )}
 
       <CollapsibleSection title="Passport form" subtitle="Create, edit, and renew" defaultOpen={passportMode !== "create"}>
+        <div className="mb-3 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onApplyOcrPrefill}
+            disabled={ocrLoading || !selectedCustomerId}
+            className="rounded-md border border-violet-300 px-3 py-2 text-sm font-medium text-violet-800 hover:bg-violet-50 disabled:opacity-60"
+          >
+            {ocrLoading ? "Reading..." : "OCR Prefill Passport"}
+          </button>
+        </div>
+        {ocrInfo ? <p className="mb-3 text-xs text-slate-500">{ocrInfo}</p> : null}
         <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-2">
+          <label className="text-sm sm:col-span-2">
+            <input
+              type="checkbox"
+              checked={usePrefillOnUpload}
+              onChange={(event) => onToggleUsePrefillOnUpload(event.target.checked)}
+              className="mr-2"
+            />
+            Use OCR prefill automatically when uploading file (default off)
+          </label>
+          <DocumentFileField
+            title="Passport file"
+            recordLabel="passport"
+            recordId={fileRecordId}
+            canUpload={selectedCustomerId !== null}
+            noUploadHint="Create/select a customer first. File can be uploaded before saving the passport."
+            fileObjectKey={fileObjectKey}
+            fileUrl={fileUrl}
+            uploading={uploadingFile}
+            deleting={deletingFile}
+            error={fileError}
+            onUpload={onUploadFile}
+            onDelete={onDeleteFile}
+          />
           <label className="text-sm">
             Passport number *
             <input
