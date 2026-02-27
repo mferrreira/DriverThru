@@ -19,6 +19,9 @@ class ParsedPassportMrz:
 
 
 def extract_td3_mrz_lines(raw_text: str) -> list[str]:
+    if "EMPTY_MRZ" in (raw_text or "").upper():
+        return []
+
     candidates: list[str] = []
     for raw_line in raw_text.splitlines():
         cleaned = re.sub(r"[^A-Z0-9<]", "", raw_line.strip().upper())
@@ -33,26 +36,55 @@ def extract_td3_mrz_lines(raw_text: str) -> list[str]:
     for idx in range(len(candidates) - 1):
         first = candidates[idx]
         second = candidates[idx + 1]
-        if first.startswith("P<") and len(first) >= 40 and len(second) >= 40:
-            return [first[:44].ljust(44, "<"), second[:44].ljust(44, "<")]
+        if first.startswith("P<"):
+            return [first, second]
 
-    first = candidates[0][:44].ljust(44, "<")
-    second = candidates[1][:44].ljust(44, "<")
-    return [first, second]
+    return []
 
 
 def parse_passport_mrz(lines: list[str]) -> ParsedPassportMrz | None:
     if len(lines) < 2:
         return None
-    line1 = lines[0].strip().upper()
-    line2 = lines[1].strip().upper()
-    if len(line1) < 40 or len(line2) < 40:
+    line1_raw = lines[0].strip().upper()
+    line2_raw = lines[1].strip().upper()
+    if len(line1_raw) < 30 or len(line2_raw) < 30:
         return None
+    line1 = _normalize_td3_line(line1_raw)
+    line2 = _normalize_td3_line(line2_raw)
 
     parsed = _parse_with_mrz_library(line1, line2)
     if parsed is not None:
         return parsed
     return _parse_td3_fallback(line1, line2)
+
+
+def validate_td3_mrz_lines(lines: list[str]) -> list[str]:
+    problems: list[str] = []
+    if len(lines) != 2:
+        return ["MRZ must contain exactly 2 lines."]
+
+    line1 = (lines[0] or "").strip().upper()
+    line2 = (lines[1] or "").strip().upper()
+
+    if len(line1) != 44 or len(line2) != 44:
+        problems.append("MRZ lines must be exactly 44 characters.")
+    if not re.fullmatch(r"[A-Z0-9<]{44}", line1 or ""):
+        problems.append("MRZ line 1 contains invalid characters.")
+    if not re.fullmatch(r"[A-Z0-9<]{44}", line2 or ""):
+        problems.append("MRZ line 2 contains invalid characters.")
+    if not line1.startswith("P<"):
+        problems.append("MRZ line 1 must start with 'P<'.")
+    if problems:
+        return problems
+
+    if not _check_digit_ok(line2[0:9], line2[9]):
+        problems.append("Invalid passport number check digit.")
+    if not _check_digit_ok(line2[13:19], line2[19]):
+        problems.append("Invalid birth date check digit.")
+    if not _check_digit_ok(line2[21:27], line2[27]):
+        problems.append("Invalid expiration date check digit.")
+
+    return problems
 
 
 def _parse_with_mrz_library(line1: str, line2: str) -> ParsedPassportMrz | None:
@@ -192,3 +224,38 @@ def _resolve_century(yy: int, mm: int, dd: int) -> int:
             return year_2000 if abs((d2000 - today).days) <= abs((d1900 - today).days) else year_1900
         return year_1900
     return year_2000
+
+
+def _check_digit_ok(data: str, check_char: str) -> bool:
+    if not check_char:
+        return False
+    if check_char == "<":
+        return False
+    expected = _compute_check_digit(data)
+    try:
+        return int(check_char) == expected
+    except ValueError:
+        return False
+
+
+def _compute_check_digit(data: str) -> int:
+    weights = (7, 3, 1)
+    total = 0
+    for idx, char in enumerate(data):
+        total += _mrz_value(char) * weights[idx % 3]
+    return total % 10
+
+
+def _mrz_value(char: str) -> int:
+    if "0" <= char <= "9":
+        return ord(char) - ord("0")
+    if "A" <= char <= "Z":
+        return ord(char) - ord("A") + 10
+    return 0
+
+
+def _normalize_td3_line(value: str) -> str:
+    clean = re.sub(r"[^A-Z0-9<]", "", (value or "").strip().upper())
+    if len(clean) >= 44:
+        return clean[:44]
+    return clean.ljust(44, "<")

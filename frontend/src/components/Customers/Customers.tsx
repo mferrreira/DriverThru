@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { FileText, IdCard, Pencil, Trash2, UserRound, Wrench, X } from "lucide-react";
+import { FileText, IdCard, UserRound, Wrench, X } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { apiFetch } from "../../lib/api";
@@ -51,13 +51,6 @@ type OCRCustomerFormPayload = Partial<{
 type OCRPassportFormPayload = Partial<PassportForm>;
 type OCRBrazilFormPayload = Partial<BrazilForm>;
 type OCRNjFormPayload = Partial<NJForm>;
-
-type OCRCustomerPrefillApiResponse = {
-  apply_customer_fields: boolean;
-  customer_fields: OCRCustomerFormPayload;
-  warnings?: string[];
-  ocr_meta?: OCROperationMetaPayload | null;
-};
 
 type OCRPassportPrefillApiResponse = {
   apply_customer_fields: boolean;
@@ -156,7 +149,6 @@ export default function Customers() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorTab, setEditorTab] = useState<EditorTab>("customer");
   const [failedPhotoUrls, setFailedPhotoUrls] = useState<Record<string, true>>({});
-  const [ocrLoadingTarget, setOcrLoadingTarget] = useState<null | "customer" | "nj" | "br" | "passport">(null);
   const [ocrInfo, setOcrInfo] = useState<Record<"customer" | "nj" | "br" | "passport", string | null>>({
     customer: null,
     nj: null,
@@ -673,10 +665,6 @@ export default function Customers() {
     setEditorOpen(true);
   }
 
-  function openDocumentGenerator(customerId: number) {
-    navigate(`/documents?customerId=${customerId}`);
-  }
-
   function openDocumentGeneratorWithTemplate(customerId: number, template: "affidavit" | "ba208") {
     navigate(`/documents?customerId=${customerId}&template=${template}`);
   }
@@ -709,17 +697,6 @@ export default function Customers() {
           currentPassportRecord?.document_file_object_key ?? null,
         )
       : null;
-
-  async function pickOcrFile(): Promise<File | null> {
-    return new Promise((resolve) => {
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = "image/*,.pdf,application/pdf";
-      input.onchange = () => resolve(input.files?.[0] ?? null);
-      input.oncancel = () => resolve(null);
-      input.click();
-    });
-  }
 
   async function postOcrPrefill<T>(path: string, file: File): Promise<T> {
     const formData = new FormData();
@@ -766,6 +743,10 @@ export default function Customers() {
       parts.push(`Provider: ${meta.provider}`);
     }
     return parts.length ? `Last OCR: ${parts.join(" • ")}` : null;
+  }
+
+  function alertError(message: string) {
+    window.alert(message);
   }
 
   function applyCustomerFormPatch(patch: OCRCustomerFormPayload) {
@@ -859,87 +840,61 @@ export default function Customers() {
     }));
   }
 
-  async function handleApplyCustomerOcr() {
-    const file = await pickOcrFile();
-    if (!file) return;
-    setOcrLoadingTarget("customer");
-    try {
-      const data = await postOcrPrefill<OCRCustomerPrefillApiResponse>("/ocr/prefill/customer-form", file);
-      setOcrInfo((prev) => ({ ...prev, customer: formatOcrMeta(data.ocr_meta) }));
-      if (data.apply_customer_fields) {
-        applyCustomerFormPatch(data.customer_fields ?? {});
-      } else {
-        window.alert("OCR detected a license/document not suitable for Customer core prefill in this button.");
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not apply OCR prefill.";
-      window.alert(message);
-    } finally {
-      setOcrLoadingTarget(null);
-    }
-  }
-
   async function applyNjOcrFromFile(file: File) {
-    setOcrLoadingTarget("nj");
     try {
+      setNjError(null);
       const data = await postOcrPrefill<OCRNjPrefillApiResponse>("/ocr/prefill/nj-license-form", file);
       setOcrInfo((prev) => ({ ...prev, nj: formatOcrMeta(data.ocr_meta) }));
-      applyNjFormPatch(data.nj_form ?? {});
+      const payload = (data as OCRNjPrefillApiResponse & Record<string, unknown>).nj_form
+        ?? ((data as Record<string, unknown>).nj_license_fields as OCRNjFormPayload | undefined)
+        ?? ((data as Record<string, unknown>).document_fields as OCRNjFormPayload | undefined)
+        ?? {};
+      applyNjFormPatch(payload);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not apply NJ OCR prefill.";
-      setNjError(message);
-    } finally {
-      setOcrLoadingTarget(null);
+      setNjError(null);
+      alertError(message);
     }
-  }
-
-  async function handleApplyNjOcr() {
-    const file = await pickOcrFile();
-    if (!file) return;
-    await applyNjOcrFromFile(file);
   }
 
   async function applyBrazilOcrFromFile(file: File) {
-    setOcrLoadingTarget("br");
     try {
+      setBrError(null);
       const data = await postOcrPrefill<OCRBrazilPrefillApiResponse>("/ocr/prefill/brazil-license-form", file);
       setOcrInfo((prev) => ({ ...prev, br: formatOcrMeta(data.ocr_meta) }));
-      applyBrazilFormPatch(data.brazil_form ?? {});
+      const payload = (data as OCRBrazilPrefillApiResponse & Record<string, unknown>).brazil_form
+        ?? ((data as Record<string, unknown>).brazil_license_fields as OCRBrazilFormPayload | undefined)
+        ?? ((data as Record<string, unknown>).document_fields as OCRBrazilFormPayload | undefined)
+        ?? {};
+      applyBrazilFormPatch(payload);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not apply Brazil license OCR prefill.";
-      setBrError(message);
-    } finally {
-      setOcrLoadingTarget(null);
+      setBrError(null);
+      alertError(message);
     }
-  }
-
-  async function handleApplyBrazilOcr() {
-    const file = await pickOcrFile();
-    if (!file) return;
-    await applyBrazilOcrFromFile(file);
   }
 
   async function applyPassportOcrFromFile(file: File) {
-    setOcrLoadingTarget("passport");
     try {
+      setPassportError(null);
       const data = await postOcrPrefill<OCRPassportPrefillApiResponse>("/ocr/prefill/passport-form", file);
       setOcrInfo((prev) => ({ ...prev, passport: formatOcrMeta(data.ocr_meta) }));
       if (data.apply_customer_fields) {
-        applyCustomerFormPatch(data.customer_form ?? {});
+        const customerPayload = (data as OCRPassportPrefillApiResponse & Record<string, unknown>).customer_form
+          ?? ((data as Record<string, unknown>).customer_fields as OCRCustomerFormPayload | undefined)
+          ?? {};
+        applyCustomerFormPatch(customerPayload);
       }
-      applyPassportFormPatch(data.passport_form ?? {});
+      const passportPayload = (data as OCRPassportPrefillApiResponse & Record<string, unknown>).passport_form
+        ?? ((data as Record<string, unknown>).passport_fields as OCRPassportFormPayload | undefined)
+        ?? ((data as Record<string, unknown>).document_fields as OCRPassportFormPayload | undefined)
+        ?? {};
+      applyPassportFormPatch(passportPayload);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not apply passport OCR prefill.";
-      setPassportError(message);
-    } finally {
-      setOcrLoadingTarget(null);
+      setPassportError(null);
+      alertError(message);
     }
-  }
-
-  async function handleApplyPassportOcr() {
-    const file = await pickOcrFile();
-    if (!file) return;
-    await applyPassportOcrFromFile(file);
   }
 
   async function uploadRecordFile(path: string, file: File): Promise<void> {
@@ -1005,7 +960,8 @@ export default function Customers() {
 
   async function handleUploadNjFile(file: File) {
     if (!selectedCustomerId) {
-      setNjFileError("Create/select a customer first.");
+      setNjFileError(null);
+      alertError("Create/select a customer first.");
       return;
     }
     setUploadingNjFile(true);
@@ -1014,6 +970,9 @@ export default function Customers() {
       if (njMode === "edit" && editingNjId) {
         await uploadRecordFile(`/customers/${selectedCustomerId}/nj-driver-licenses/${editingNjId}/file`, file);
         await handleSelectCustomer(selectedCustomerId);
+        if (useNjPrefillOnUpload) {
+          await applyNjOcrFromFile(file);
+        }
       } else {
         const staged = await uploadStagedFile(`/customers/${selectedCustomerId}/nj-driver-licenses/staged-file`, file);
         setNjStagedFileObjectKey(staged.object_key);
@@ -1022,7 +981,9 @@ export default function Customers() {
         }
       }
     } catch (error) {
-      setNjFileError(error instanceof Error ? error.message : "Could not upload NJ license file.");
+      const message = error instanceof Error ? error.message : "Could not upload NJ license file.";
+      setNjFileError(null);
+      alertError(message);
     } finally {
       setUploadingNjFile(false);
     }
@@ -1030,7 +991,8 @@ export default function Customers() {
 
   async function handleDeleteNjFile() {
     if (!selectedCustomerId) {
-      setNjFileError("Select a customer first.");
+      setNjFileError(null);
+      alertError("Select a customer first.");
       return;
     }
     if (!window.confirm("Delete this NJ license file?")) return;
@@ -1044,10 +1006,13 @@ export default function Customers() {
         await deleteStagedFile(`/customers/${selectedCustomerId}/nj-driver-licenses/staged-file`, njStagedFileObjectKey);
         setNjStagedFileObjectKey(null);
       } else {
-        setNjFileError("No staged NJ license file to delete.");
+        setNjFileError(null);
+        alertError("No staged NJ license file to delete.");
       }
     } catch (error) {
-      setNjFileError(error instanceof Error ? error.message : "Could not delete NJ license file.");
+      const message = error instanceof Error ? error.message : "Could not delete NJ license file.";
+      setNjFileError(null);
+      alertError(message);
     } finally {
       setDeletingNjFile(false);
     }
@@ -1055,7 +1020,8 @@ export default function Customers() {
 
   async function handleUploadBrFile(file: File) {
     if (!selectedCustomerId) {
-      setBrFileError("Create/select a customer first.");
+      setBrFileError(null);
+      alertError("Create/select a customer first.");
       return;
     }
     setUploadingBrFile(true);
@@ -1064,6 +1030,9 @@ export default function Customers() {
       if (brMode === "edit" && editingBrId) {
         await uploadRecordFile(`/customers/${selectedCustomerId}/brazil-driver-licenses/${editingBrId}/file`, file);
         await handleSelectCustomer(selectedCustomerId);
+        if (useBrPrefillOnUpload) {
+          await applyBrazilOcrFromFile(file);
+        }
       } else {
         const staged = await uploadStagedFile(`/customers/${selectedCustomerId}/brazil-driver-licenses/staged-file`, file);
         setBrStagedFileObjectKey(staged.object_key);
@@ -1072,7 +1041,9 @@ export default function Customers() {
         }
       }
     } catch (error) {
-      setBrFileError(error instanceof Error ? error.message : "Could not upload Brazil license file.");
+      const message = error instanceof Error ? error.message : "Could not upload Brazil license file.";
+      setBrFileError(null);
+      alertError(message);
     } finally {
       setUploadingBrFile(false);
     }
@@ -1080,7 +1051,8 @@ export default function Customers() {
 
   async function handleDeleteBrFile() {
     if (!selectedCustomerId) {
-      setBrFileError("Select a customer first.");
+      setBrFileError(null);
+      alertError("Select a customer first.");
       return;
     }
     if (!window.confirm("Delete this Brazil license file?")) return;
@@ -1094,10 +1066,13 @@ export default function Customers() {
         await deleteStagedFile(`/customers/${selectedCustomerId}/brazil-driver-licenses/staged-file`, brStagedFileObjectKey);
         setBrStagedFileObjectKey(null);
       } else {
-        setBrFileError("No staged Brazil license file to delete.");
+        setBrFileError(null);
+        alertError("No staged Brazil license file to delete.");
       }
     } catch (error) {
-      setBrFileError(error instanceof Error ? error.message : "Could not delete Brazil license file.");
+      const message = error instanceof Error ? error.message : "Could not delete Brazil license file.";
+      setBrFileError(null);
+      alertError(message);
     } finally {
       setDeletingBrFile(false);
     }
@@ -1105,7 +1080,8 @@ export default function Customers() {
 
   async function handleUploadPassportFile(file: File) {
     if (!selectedCustomerId) {
-      setPassportFileError("Create/select a customer first.");
+      setPassportFileError(null);
+      alertError("Create/select a customer first.");
       return;
     }
     setUploadingPassportFile(true);
@@ -1114,6 +1090,9 @@ export default function Customers() {
       if (passportMode === "edit" && editingPassportId) {
         await uploadRecordFile(`/customers/${selectedCustomerId}/passports/${editingPassportId}/file`, file);
         await handleSelectCustomer(selectedCustomerId);
+        if (usePassportPrefillOnUpload) {
+          await applyPassportOcrFromFile(file);
+        }
       } else {
         const staged = await uploadStagedFile(`/customers/${selectedCustomerId}/passports/staged-file`, file);
         setPassportStagedFileObjectKey(staged.object_key);
@@ -1122,7 +1101,9 @@ export default function Customers() {
         }
       }
     } catch (error) {
-      setPassportFileError(error instanceof Error ? error.message : "Could not upload passport file.");
+      const message = error instanceof Error ? error.message : "Could not upload passport file.";
+      setPassportFileError(null);
+      alertError(message);
     } finally {
       setUploadingPassportFile(false);
     }
@@ -1130,7 +1111,8 @@ export default function Customers() {
 
   async function handleDeletePassportFile() {
     if (!selectedCustomerId) {
-      setPassportFileError("Select a customer first.");
+      setPassportFileError(null);
+      alertError("Select a customer first.");
       return;
     }
     if (!window.confirm("Delete this passport file?")) return;
@@ -1144,10 +1126,13 @@ export default function Customers() {
         await deleteStagedFile(`/customers/${selectedCustomerId}/passports/staged-file`, passportStagedFileObjectKey);
         setPassportStagedFileObjectKey(null);
       } else {
-        setPassportFileError("No staged passport file to delete.");
+        setPassportFileError(null);
+        alertError("No staged passport file to delete.");
       }
     } catch (error) {
-      setPassportFileError(error instanceof Error ? error.message : "Could not delete passport file.");
+      const message = error instanceof Error ? error.message : "Could not delete passport file.";
+      setPassportFileError(null);
+      alertError(message);
     } finally {
       setDeletingPassportFile(false);
     }
@@ -1229,20 +1214,19 @@ export default function Customers() {
                 <th className="px-3 py-2.5 font-medium">Contact</th>
                 <th className="px-3 py-2.5 font-medium">Date of birth</th>
                 <th className="px-3 py-2.5 font-medium">Status</th>
-                <th className="px-3 py-2.5 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loadingList ? (
                 <tr>
-                  <td colSpan={5} className="px-3 py-3 text-slate-500">
+                  <td colSpan={4} className="px-3 py-3 text-slate-500">
                     Loading customers...
                   </td>
                 </tr>
               ) : null}
               {!loadingList && customers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-3 py-3 text-slate-500">
+                  <td colSpan={4} className="px-3 py-3 text-slate-500">
                     No customers found.
                   </td>
                 </tr>
@@ -1252,7 +1236,20 @@ export default function Customers() {
                     const photoUrl = buildCustomerPhotoUrl(customer.id, customer.customer_photo_object_key);
                     const showPhoto = Boolean(photoUrl && !failedPhotoUrls[photoUrl]);
                     return (
-                      <tr key={customer.id} className="border-b border-slate-100">
+                      <tr
+                        key={customer.id}
+                        className="cursor-pointer border-b border-slate-100 transition hover:bg-slate-50"
+                        onClick={() => void openEditDialog(customer.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            void openEditDialog(customer.id);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Open ${customer.first_name} ${customer.last_name}`}
+                      >
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-3">
                             {showPhoto && photoUrl ? (
@@ -1294,37 +1291,6 @@ export default function Customers() {
                             {customer.active ? "active" : "inactive"}
                           </span>
                         </td>
-                        <td className="px-3 py-2.5">
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() => void openEditDialog(customer.id)}
-                              title="Edit customer"
-                              aria-label="Edit customer"
-                              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void deactivateCustomer(customer.id)}
-                              title="Remove customer"
-                              aria-label="Remove customer"
-                              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-red-300 text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => openDocumentGenerator(customer.id)}
-                              title="Generate document"
-                              aria-label="Generate document"
-                              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-blue-300 text-blue-700 hover:bg-blue-50"
-                            >
-                              <FileText className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </td>
                       </tr>
                     );
                   })
@@ -1336,7 +1302,7 @@ export default function Customers() {
 
       {editorOpen ? (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/45 p-4 pt-10">
-          <div className="max-h-[92vh] w-full max-w-5xl overflow-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl">
+          <div className="flex h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl">
             <div className="mb-4 flex items-center justify-between border-b border-slate-200 pb-3">
               <div>
                 <h2 className="text-2xl font-semibold text-slate-900">
@@ -1355,8 +1321,8 @@ export default function Customers() {
               </button>
             </div>
 
-            <div className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-[230px_1fr]">
+            <div className="min-h-0 flex-1">
+              <div className="grid h-full gap-4 md:grid-cols-[230px_1fr]">
                 <aside className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3">
                   <p className="px-2 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Sections</p>
                   <nav className="space-y-1">
@@ -1389,7 +1355,7 @@ export default function Customers() {
                   </nav>
                 </aside>
 
-                <div>
+                <div className="min-h-0 overflow-y-auto pr-1">
                   {editorTab === "customer" ? (
                     <CustomerCoreSection
                       customerMode={customerMode}
@@ -1408,8 +1374,6 @@ export default function Customers() {
                       onDeactivate={(customerId) => void deactivateCustomer(customerId)}
                       onUploadPhoto={(file) => void uploadCustomerPhoto(file)}
                       onDeletePhoto={() => void deleteCustomerPhoto()}
-                      onApplyOcrPrefill={() => void handleApplyCustomerOcr()}
-                      ocrLoading={ocrLoadingTarget === "customer"}
                       ocrInfo={ocrInfo.customer}
                     />
                   ) : null}
@@ -1431,8 +1395,6 @@ export default function Customers() {
                       onStartCreate={startCreateNj}
                       onToggleEndorsement={toggleNjEndorsement}
                       onToggleRestriction={toggleNjRestriction}
-                      onApplyOcrPrefill={() => void handleApplyNjOcr()}
-                      ocrLoading={ocrLoadingTarget === "nj"}
                       ocrInfo={ocrInfo.nj}
                       fileRecordId={njMode === "edit" ? editingNjId : null}
                       fileObjectKey={njMode === "edit" ? currentNjRecord?.document_file_object_key ?? null : njStagedFileObjectKey}
@@ -1471,8 +1433,6 @@ export default function Customers() {
                       onStartEdit={startEditBrazil}
                       onStartRenew={startRenewBrazil}
                       onStartCreate={startCreateBrazil}
-                      onApplyOcrPrefill={() => void handleApplyBrazilOcr()}
-                      ocrLoading={ocrLoadingTarget === "br"}
                       ocrInfo={ocrInfo.br}
                       fileRecordId={brMode === "edit" ? editingBrId : null}
                       fileObjectKey={brMode === "edit" ? currentBrRecord?.document_file_object_key ?? null : brStagedFileObjectKey}
@@ -1511,8 +1471,6 @@ export default function Customers() {
                       onStartEdit={startEditPassport}
                       onStartRenew={startRenewPassport}
                       onStartCreate={startCreatePassport}
-                      onApplyOcrPrefill={() => void handleApplyPassportOcr()}
-                      ocrLoading={ocrLoadingTarget === "passport"}
                       ocrInfo={ocrInfo.passport}
                       fileRecordId={passportMode === "edit" ? editingPassportId : null}
                       fileObjectKey={

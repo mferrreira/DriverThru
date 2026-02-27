@@ -19,8 +19,6 @@ type PassportsSectionProps = {
   onStartEdit: (item: Passport) => void;
   onStartRenew: (item: Passport) => void;
   onStartCreate: () => void;
-  onApplyOcrPrefill: () => void;
-  ocrLoading: boolean;
   ocrInfo?: string | null;
   fileRecordId: number | null;
   fileObjectKey: string | null;
@@ -48,8 +46,6 @@ export default function PassportsSection({
   onStartEdit,
   onStartRenew,
   onStartCreate,
-  onApplyOcrPrefill,
-  ocrLoading,
   ocrInfo,
   fileRecordId,
   fileObjectKey,
@@ -128,27 +124,21 @@ export default function PassportsSection({
         <p className="mt-3 text-sm text-zinc-500">Select a customer to manage passports.</p>
       )}
 
-      <CollapsibleSection title="Passport form" subtitle="Create, edit, and renew" defaultOpen={passportMode !== "create"}>
-        <div className="mb-3 flex items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={onApplyOcrPrefill}
-            disabled={ocrLoading || !selectedCustomerId}
-            className="rounded-md border border-violet-300 px-3 py-2 text-sm font-medium text-violet-800 hover:bg-violet-50 disabled:opacity-60"
-          >
-            {ocrLoading ? "Reading..." : "OCR Prefill Passport"}
-          </button>
-        </div>
+      <CollapsibleSection title="Passport form" subtitle="Create, edit, and renew" defaultOpen>
         {ocrInfo ? <p className="mb-3 text-xs text-slate-500">{ocrInfo}</p> : null}
         <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-2">
-          <label className="text-sm sm:col-span-2">
-            <input
-              type="checkbox"
-              checked={usePrefillOnUpload}
-              onChange={(event) => onToggleUsePrefillOnUpload(event.target.checked)}
-              className="mr-2"
-            />
-            Use OCR prefill automatically when uploading file (default off)
+          <label className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm sm:col-span-2">
+            <span className="font-medium text-slate-700">Use OCR prefill on upload</span>
+            <span className="relative inline-flex items-center">
+              <input
+                type="checkbox"
+                checked={usePrefillOnUpload}
+                onChange={(event) => onToggleUsePrefillOnUpload(event.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="h-6 w-11 rounded-full bg-slate-300 transition-colors peer-checked:bg-blue-600" />
+              <span className="pointer-events-none absolute left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
+            </span>
           </label>
           <DocumentFileField
             title="Passport file"

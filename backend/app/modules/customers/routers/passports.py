@@ -43,14 +43,6 @@ def list_passports_route(
         raise_not_found(exc)
 
 
-@router.get("/{customer_id}/passports/{passport_id}", response_model=PassportRead)
-def get_passport_route(customer_id: int, passport_id: int, db: Session = Depends(get_db)) -> PassportRead:
-    try:
-        return get_passport_or_404(db=db, customer_id=customer_id, passport_id=passport_id)
-    except Exception as exc:  # noqa: BLE001
-        raise_not_found(exc)
-
-
 @router.post("/{customer_id}/passports", response_model=PassportRead, status_code=status.HTTP_201_CREATED)
 def create_passport_route(
     customer_id: int,
@@ -87,24 +79,6 @@ def renew_passport_route(
         return renew_passport(db=db, customer_id=customer_id, passport_id=passport_id, payload=payload)
     except Exception as exc:  # noqa: BLE001
         raise_not_found(exc)
-
-
-@router.delete("/{customer_id}/passports/{passport_id}", status_code=status.HTTP_204_NO_CONTENT)
-def deactivate_passport_route(customer_id: int, passport_id: int, db: Session = Depends(get_db)) -> Response:
-    try:
-        deactivate_passport(db=db, customer_id=customer_id, passport_id=passport_id)
-    except Exception as exc:  # noqa: BLE001
-        raise_not_found(exc)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-@router.delete("/{customer_id}/passports/{passport_id}/permanent", status_code=status.HTTP_204_NO_CONTENT)
-def delete_passport_route(customer_id: int, passport_id: int, db: Session = Depends(get_db)) -> Response:
-    try:
-        delete_passport(db=db, customer_id=customer_id, passport_id=passport_id)
-    except Exception as exc:  # noqa: BLE001
-        raise_not_found(exc)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/{customer_id}/passports/staged-file", response_model=StagedDocumentFileResponse)
@@ -145,6 +119,32 @@ def delete_passport_staged_file_route(customer_id: int, object_key: str = Query(
         delete_staged_document_file(customer_id=customer_id, doc_type=PASSPORT_DOC_TYPE, object_key=object_key)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise_not_found(exc)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/{customer_id}/passports/{passport_id}", response_model=PassportRead)
+def get_passport_route(customer_id: int, passport_id: int, db: Session = Depends(get_db)) -> PassportRead:
+    try:
+        return get_passport_or_404(db=db, customer_id=customer_id, passport_id=passport_id)
+    except Exception as exc:  # noqa: BLE001
+        raise_not_found(exc)
+
+
+@router.delete("/{customer_id}/passports/{passport_id}", status_code=status.HTTP_204_NO_CONTENT)
+def deactivate_passport_route(customer_id: int, passport_id: int, db: Session = Depends(get_db)) -> Response:
+    try:
+        deactivate_passport(db=db, customer_id=customer_id, passport_id=passport_id)
+    except Exception as exc:  # noqa: BLE001
+        raise_not_found(exc)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete("/{customer_id}/passports/{passport_id}/permanent", status_code=status.HTTP_204_NO_CONTENT)
+def delete_passport_route(customer_id: int, passport_id: int, db: Session = Depends(get_db)) -> Response:
+    try:
+        delete_passport(db=db, customer_id=customer_id, passport_id=passport_id)
     except Exception as exc:  # noqa: BLE001
         raise_not_found(exc)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -85,8 +85,6 @@ type CustomerCoreSectionProps = {
   onDeactivate: (customerId: number) => void;
   onUploadPhoto: (file: File) => void;
   onDeletePhoto: () => void;
-  onApplyOcrPrefill: () => void;
-  ocrLoading: boolean;
   ocrInfo?: string | null;
 };
 
@@ -107,8 +105,6 @@ export default function CustomerCoreSection({
   onDeactivate,
   onUploadPhoto,
   onDeletePhoto,
-  onApplyOcrPrefill,
-  ocrLoading,
   ocrInfo,
 }: CustomerCoreSectionProps) {
   const [showMetricConverter, setShowMetricConverter] = useState(false);
@@ -151,25 +147,15 @@ export default function CustomerCoreSection({
             onClick={() => onDeactivate(selectedCustomerId)}
             className="rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
           >
-            Deactivate
+            Remove customer
           </button>
         ) : null}
       </div>
       <CollapsibleSection
         title="Customer data"
         subtitle="Expand to create/edit core customer data and addresses"
-
+        defaultOpen
       >
-        <div className="mb-3 flex justify-end">
-          <button
-            type="button"
-            onClick={onApplyOcrPrefill}
-            disabled={ocrLoading}
-            className="rounded-md border border-violet-300 px-3 py-2 text-sm font-medium text-violet-800 hover:bg-violet-50 disabled:opacity-60"
-          >
-            {ocrLoading ? "Reading..." : "OCR Prefill Customer"}
-          </button>
-        </div>
         {ocrInfo ? <p className="mb-3 text-xs text-slate-500">{ocrInfo}</p> : null}
         <form onSubmit={onSubmit} className="space-y-4 py-2">
           <CustomerPhotoField
@@ -437,8 +423,11 @@ export default function CustomerCoreSection({
             };
             const address = customerForm[addressType];
             return (
-              <fieldset key={addressType} className="rounded-lg border border-zinc-200 p-3">
-                <legend className="px-1 text-sm font-semibold text-zinc-700">{labelMap[addressType]}</legend>
+              <CollapsibleSection
+                key={addressType}
+                title={labelMap[addressType]}
+                defaultOpen={addressType === "residential"}
+              >
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="text-sm">
                     Street
@@ -519,7 +508,7 @@ export default function CustomerCoreSection({
                     />
                   </label>
                 </div>
-              </fieldset>
+              </CollapsibleSection>
             );
           })}
 

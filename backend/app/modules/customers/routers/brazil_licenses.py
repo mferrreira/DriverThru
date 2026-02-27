@@ -48,18 +48,6 @@ def list_brazil_licenses_route(
         raise_not_found(exc)
 
 
-@router.get("/{customer_id}/brazil-driver-licenses/{license_id}", response_model=BrazilDriverLicenseRead)
-def get_brazil_license_route(
-    customer_id: int,
-    license_id: int,
-    db: Session = Depends(get_db),
-) -> BrazilDriverLicenseRead:
-    try:
-        return get_brazil_license_or_404(db=db, customer_id=customer_id, license_id=license_id)
-    except Exception as exc:  # noqa: BLE001
-        raise_not_found(exc)
-
-
 @router.post("/{customer_id}/brazil-driver-licenses", response_model=BrazilDriverLicenseRead, status_code=status.HTTP_201_CREATED)
 def create_brazil_license_route(
     customer_id: int,
@@ -102,24 +90,6 @@ def renew_brazil_license_route(
         raise_not_found(exc)
 
 
-@router.delete("/{customer_id}/brazil-driver-licenses/{license_id}", status_code=status.HTTP_204_NO_CONTENT)
-def deactivate_brazil_license_route(customer_id: int, license_id: int, db: Session = Depends(get_db)) -> Response:
-    try:
-        deactivate_brazil_license(db=db, customer_id=customer_id, license_id=license_id)
-    except Exception as exc:  # noqa: BLE001
-        raise_not_found(exc)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-@router.delete("/{customer_id}/brazil-driver-licenses/{license_id}/permanent", status_code=status.HTTP_204_NO_CONTENT)
-def delete_brazil_license_route(customer_id: int, license_id: int, db: Session = Depends(get_db)) -> Response:
-    try:
-        delete_brazil_license(db=db, customer_id=customer_id, license_id=license_id)
-    except Exception as exc:  # noqa: BLE001
-        raise_not_found(exc)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
 @router.post("/{customer_id}/brazil-driver-licenses/staged-file", response_model=StagedDocumentFileResponse)
 async def upload_brazil_license_staged_file_route(
     customer_id: int,
@@ -158,6 +128,36 @@ def delete_brazil_license_staged_file_route(customer_id: int, object_key: str = 
         delete_staged_document_file(customer_id=customer_id, doc_type=BR_DOC_TYPE, object_key=object_key)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise_not_found(exc)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/{customer_id}/brazil-driver-licenses/{license_id}", response_model=BrazilDriverLicenseRead)
+def get_brazil_license_route(
+    customer_id: int,
+    license_id: int,
+    db: Session = Depends(get_db),
+) -> BrazilDriverLicenseRead:
+    try:
+        return get_brazil_license_or_404(db=db, customer_id=customer_id, license_id=license_id)
+    except Exception as exc:  # noqa: BLE001
+        raise_not_found(exc)
+
+
+@router.delete("/{customer_id}/brazil-driver-licenses/{license_id}", status_code=status.HTTP_204_NO_CONTENT)
+def deactivate_brazil_license_route(customer_id: int, license_id: int, db: Session = Depends(get_db)) -> Response:
+    try:
+        deactivate_brazil_license(db=db, customer_id=customer_id, license_id=license_id)
+    except Exception as exc:  # noqa: BLE001
+        raise_not_found(exc)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete("/{customer_id}/brazil-driver-licenses/{license_id}/permanent", status_code=status.HTTP_204_NO_CONTENT)
+def delete_brazil_license_route(customer_id: int, license_id: int, db: Session = Depends(get_db)) -> Response:
+    try:
+        delete_brazil_license(db=db, customer_id=customer_id, license_id=license_id)
     except Exception as exc:  # noqa: BLE001
         raise_not_found(exc)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

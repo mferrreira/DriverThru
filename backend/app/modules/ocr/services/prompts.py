@@ -19,9 +19,11 @@ def prefill_customer_form_json_prompt() -> str:
 
 def extract_passport_mrz_only_prompt() -> str:
     return (
-        "Extract ONLY the passport MRZ from this image/PDF. "
-        "Return plain text with exactly two lines when possible, without markdown or explanations. "
-        "Keep all '<' characters and original MRZ order."
+        "Extract ONLY the passport MRZ (TD3) from this image/PDF. "
+        "Return EXACTLY two lines and nothing else. "
+        "Each line must have exactly 44 characters and only [A-Z0-9<]. "
+        "Do not include markdown, labels, explanations, or extra whitespace. "
+        "If MRZ is not readable, return exactly: EMPTY_MRZ"
     )
 
 

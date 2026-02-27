@@ -14,6 +14,7 @@ from app.modules.ocr.services.meta import build_ocr_meta
 from app.modules.ocr.services.passport_mrz_parser import (
     extract_td3_mrz_lines,
     parse_passport_mrz,
+    validate_td3_mrz_lines,
 )
 from app.modules.ocr.services.prompts import extract_passport_mrz_only_prompt
 
@@ -34,9 +35,14 @@ def prefill_passport_form_from_document(
     mrz_lines = extract_td3_mrz_lines(result.text)
     if not mrz_lines:
         warnings.append("Could not detect two MRZ lines in OCR output.")
+    mrz_problems = validate_td3_mrz_lines(mrz_lines) if mrz_lines else []
+    warnings.extend(mrz_problems)
+
     parsed = parse_passport_mrz(mrz_lines) if mrz_lines else None
+    if parsed is not None and mrz_problems:
+        warnings.append("Parsed passport data using tolerant MRZ parsing.")
     if parsed is None:
-        warnings.append("Could not parse MRZ content.")
+        warnings.append("Could not parse validated MRZ content.")
 
     customer_form = OCRCustomerFormFields()
     passport_form = OCRPassportFormFields()
