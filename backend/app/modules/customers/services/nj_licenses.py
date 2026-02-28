@@ -8,6 +8,7 @@ from app.modules.customers.models import NJDriverLicense, NJDriverLicenseEndorse
 from app.modules.customers.schemas import NJDriverLicenseCreate, NJDriverLicenseUpdate
 
 from .customers import get_customer_or_404
+from .document_files import finalize_staged_document_file_for_nj_license
 from .shared import clear_current_flags
 
 
@@ -43,6 +44,13 @@ def create_nj_license(db: Session, customer_id: int, payload: NJDriverLicenseCre
     license_obj.customer_id = customer_id
     db.add(license_obj)
     db.commit()
+    if payload.staged_document_file_object_key:
+        license_obj.document_file_object_key = finalize_staged_document_file_for_nj_license(
+            customer_id=customer_id,
+            license_id=license_obj.id,
+            staged_object_key=payload.staged_document_file_object_key,
+        )
+        db.commit()
     db.refresh(license_obj)
     return get_nj_license_or_404(db, customer_id, license_obj.id)
 
@@ -86,6 +94,13 @@ def renew_nj_license(
     new_license.is_current = True
     db.add(new_license)
     db.commit()
+    if payload.staged_document_file_object_key:
+        new_license.document_file_object_key = finalize_staged_document_file_for_nj_license(
+            customer_id=customer_id,
+            license_id=new_license.id,
+            staged_object_key=payload.staged_document_file_object_key,
+        )
+        db.commit()
     db.refresh(new_license)
     return get_nj_license_or_404(db, customer_id, new_license.id)
 
@@ -119,7 +134,7 @@ def get_nj_license_or_404(db: Session, customer_id: int, license_id: int) -> NJD
 
 
 def _build_nj_license_from_create(payload: NJDriverLicenseCreate) -> NJDriverLicense:
-    nj_payload = payload.model_dump(exclude={"endorsements", "restrictions"})
+    nj_payload = payload.model_dump(exclude={"endorsements", "restrictions", "staged_document_file_object_key"})
     nj_license = NJDriverLicense(**nj_payload)
     endorsement_codes = list(dict.fromkeys(payload.endorsements))
     restriction_codes = list(dict.fromkeys(payload.restrictions))

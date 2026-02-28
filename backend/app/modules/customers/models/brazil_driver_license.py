@@ -27,6 +27,7 @@ class BrazilDriverLicense(TimestampMixin, Base):
         index=True,
     )
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    document_file_object_key: Mapped[str | None] = mapped_column(String(255))
     identity_number: Mapped[str | None] = mapped_column(String(50))
     issuing_agency: Mapped[str | None] = mapped_column(String(120))
     issuing_state: Mapped[str | None] = mapped_column(String(2))

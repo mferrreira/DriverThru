@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     AUTH_COOKIE_SAMESITE: str = "lax"
     AUTH_USERS_JSON: str
 
+    OCR_PROVIDER: str = "anthropic"
+    OCR_ANTHROPIC_MODEL: str = "claude-sonnet-4-20250514"
+    ANTHROPIC_API_KEY: str | None = None
+
     model_config = SettingsConfigDict(
         env_file=(".env", "../.env"),
         env_file_encoding="utf-8",

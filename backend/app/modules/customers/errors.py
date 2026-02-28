@@ -15,3 +15,7 @@ class PassportNotFoundError(ValueError):
 
 class CustomerPhotoNotFoundError(ValueError):
     pass
+
+
+class CustomerDocumentFileNotFoundError(ValueError):
+    pass

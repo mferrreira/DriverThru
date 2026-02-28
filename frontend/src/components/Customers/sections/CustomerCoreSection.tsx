@@ -85,6 +85,7 @@ type CustomerCoreSectionProps = {
   onDeactivate: (customerId: number) => void;
   onUploadPhoto: (file: File) => void;
   onDeletePhoto: () => void;
+  ocrInfo?: string | null;
 };
 
 export default function CustomerCoreSection({
@@ -104,6 +105,7 @@ export default function CustomerCoreSection({
   onDeactivate,
   onUploadPhoto,
   onDeletePhoto,
+  ocrInfo,
 }: CustomerCoreSectionProps) {
   const [showMetricConverter, setShowMetricConverter] = useState(false);
   const [metricWeightKg, setMetricWeightKg] = useState("");
@@ -134,7 +136,7 @@ export default function CustomerCoreSection({
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm backdrop-blur-sm">
+    <section className="rounded-2xl border border-slate-300/80 bg-slate-50/70 p-5 shadow-sm backdrop-blur-sm">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-zinc-900">
           {customerMode === "create" ? "New customer" : `Edit customer: ${selectedCustomerName}`}
@@ -145,16 +147,17 @@ export default function CustomerCoreSection({
             onClick={() => onDeactivate(selectedCustomerId)}
             className="rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50"
           >
-            Deactivate
+            Remove customer
           </button>
         ) : null}
       </div>
       <CollapsibleSection
         title="Customer data"
         subtitle="Expand to create/edit core customer data and addresses"
-
+        defaultOpen
       >
-        <form onSubmit={onSubmit} className="space-y-4 py-2">
+        {ocrInfo ? <p className="mb-3 text-xs text-slate-500">{ocrInfo}</p> : null}
+        <form onSubmit={onSubmit} className="customer-editor-form space-y-4 py-2">
           <CustomerPhotoField
             selectedCustomerId={selectedCustomerId}
             hasPhoto={Boolean(customerForm.customer_photo_object_key)}
@@ -364,6 +367,14 @@ export default function CustomerCoreSection({
               />
             </label>
             <label className="text-sm">
+              Instagram (@handle)
+              <input
+                value={customerForm.instagram_handle}
+                onChange={(event) => setCustomerForm((prev) => ({ ...prev, instagram_handle: event.target.value }))}
+                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              />
+            </label>
+            <label className="text-sm">
               Email
               <input
                 type="email"
@@ -412,8 +423,11 @@ export default function CustomerCoreSection({
             };
             const address = customerForm[addressType];
             return (
-              <fieldset key={addressType} className="rounded-lg border border-zinc-200 p-3">
-                <legend className="px-1 text-sm font-semibold text-zinc-700">{labelMap[addressType]}</legend>
+              <CollapsibleSection
+                key={addressType}
+                title={labelMap[addressType]}
+                defaultOpen={addressType === "residential"}
+              >
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="text-sm">
                     Street
@@ -494,7 +508,7 @@ export default function CustomerCoreSection({
                     />
                   </label>
                 </div>
-              </fieldset>
+              </CollapsibleSection>
             );
           })}
 

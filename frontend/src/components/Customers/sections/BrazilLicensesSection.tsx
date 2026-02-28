@@ -3,6 +3,7 @@ import { Trash2 } from "lucide-react";
 
 import CollapsibleSection from "../CollapsibleSection";
 import { brazilCategoryOptions } from "../constants";
+import DocumentFileField from "./DocumentFileField";
 import type { BrazilDriverLicense, BrazilForm, CustomerRead } from "../types";
 
 type BrazilLicensesSectionProps = {
@@ -18,6 +19,18 @@ type BrazilLicensesSectionProps = {
   onDelete: (licenseId: number) => void;
   onStartEdit: (item: BrazilDriverLicense) => void;
   onStartRenew: (item: BrazilDriverLicense) => void;
+  onStartCreate: () => void;
+  ocrInfo?: string | null;
+  fileRecordId: number | null;
+  fileObjectKey: string | null;
+  fileUrl: string | null;
+  uploadingFile: boolean;
+  deletingFile: boolean;
+  fileError: string | null;
+  onUploadFile: (file: File) => void;
+  onDeleteFile: () => void;
+  usePrefillOnUpload: boolean;
+  onToggleUsePrefillOnUpload: (checked: boolean) => void;
 };
 
 export default function BrazilLicensesSection({
@@ -33,10 +46,33 @@ export default function BrazilLicensesSection({
   onDelete,
   onStartEdit,
   onStartRenew,
+  onStartCreate,
+  ocrInfo,
+  fileRecordId,
+  fileObjectKey,
+  fileUrl,
+  uploadingFile,
+  deletingFile,
+  fileError,
+  onUploadFile,
+  onDeleteFile,
+  usePrefillOnUpload,
+  onToggleUsePrefillOnUpload,
 }: BrazilLicensesSectionProps) {
   return (
-    <section className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm backdrop-blur-sm">
-      <h3 className="text-lg font-semibold text-zinc-900">Brazil Driver Licenses</h3>
+    <section className="rounded-2xl border border-slate-300/80 bg-slate-50/70 p-5 shadow-sm backdrop-blur-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-lg font-semibold text-zinc-900">Brazil Driver Licenses</h3>
+        {brMode !== "create" ? (
+          <button
+            type="button"
+            onClick={onStartCreate}
+            className="rounded-md bg-linear-to-r from-sky-700 to-blue-700 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:brightness-110"
+          >
+            Add new Brazil license
+          </button>
+        ) : null}
+      </div>
       {selectedCustomer ? (
         <div className="mt-4 space-y-2">
           {selectedCustomer.brazil_driver_licenses.map((item) => (
@@ -91,8 +127,36 @@ export default function BrazilLicensesSection({
         <p className="mt-3 text-sm text-zinc-500">Select a customer to manage Brazil licenses.</p>
       )}
 
-      <CollapsibleSection title="Brazil license form" subtitle="Create, edit, and renew" defaultOpen={brMode !== "create"}>
-        <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-2">
+      <CollapsibleSection title="Brazil license form" subtitle="Create, edit, and renew" defaultOpen>
+        {ocrInfo ? <p className="mb-3 text-xs text-slate-500">{ocrInfo}</p> : null}
+        <form onSubmit={onSubmit} className="customer-editor-form grid gap-3 sm:grid-cols-2">
+          <label className="flex items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50/80 px-3 py-2 text-sm sm:col-span-2">
+            <span className="font-semibold text-blue-900">Apply prefill on upload</span>
+            <span className="relative inline-flex items-center">
+              <input
+                type="checkbox"
+                checked={usePrefillOnUpload}
+                onChange={(event) => onToggleUsePrefillOnUpload(event.target.checked)}
+                className="peer sr-only"
+              />
+              <span className="h-6 w-11 rounded-full bg-slate-400 transition-colors peer-checked:bg-blue-700" />
+              <span className="pointer-events-none absolute left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
+            </span>
+          </label>
+          <DocumentFileField
+            title="Brazil license file"
+            recordLabel="Brazil license"
+            recordId={fileRecordId}
+            canUpload={selectedCustomerId !== null}
+            noUploadHint="Create/select a customer first. File can be uploaded before saving the Brazil license."
+            fileObjectKey={fileObjectKey}
+            fileUrl={fileUrl}
+            uploading={uploadingFile}
+            deleting={deletingFile}
+            error={fileError}
+            onUpload={onUploadFile}
+            onDelete={onDeleteFile}
+          />
           <label className="text-sm">
             Full name *
             <input

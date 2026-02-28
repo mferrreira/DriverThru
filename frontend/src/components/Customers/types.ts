@@ -19,6 +19,7 @@ export type CustomerAddress = {
 export type NJDriverLicense = {
   id: number;
   license_number_encrypted: string | null;
+  document_file_object_key: string | null;
   issue_date: string | null;
   expiration_date: string | null;
   license_class: NJLicenseClass | null;
@@ -30,6 +31,7 @@ export type NJDriverLicense = {
 
 export type BrazilDriverLicense = {
   id: number;
+  document_file_object_key: string | null;
   full_name: string;
   identity_number: string | null;
   issuing_agency: string | null;
@@ -52,6 +54,7 @@ export type BrazilDriverLicense = {
 
 export type Passport = {
   id: number;
+  document_file_object_key: string | null;
   document_type: string | null;
   issuing_country: string | null;
   passport_number_encrypted: string;
@@ -76,6 +79,7 @@ export type CustomerListItem = {
   customer_photo_object_key: string | null;
   last_name: string;
   phone_number: string | null;
+  instagram_handle: string | null;
   email: string | null;
   date_of_birth: string;
   active: boolean;
@@ -96,6 +100,7 @@ export type CustomerRead = {
   last_name: string;
   suffix: string | null;
   phone_number: string | null;
+  instagram_handle: string | null;
   email: string | null;
   date_of_birth: string;
   has_left_country: boolean;
@@ -128,6 +133,7 @@ export type CustomerForm = {
   last_name: string;
   suffix: string;
   phone_number: string;
+  instagram_handle: string;
   email: string;
   date_of_birth: string;
   has_left_country: boolean;
