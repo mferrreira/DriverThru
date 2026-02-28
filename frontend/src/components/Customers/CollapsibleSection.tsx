@@ -15,7 +15,10 @@ export default function CollapsibleSection({
   children,
 }: CollapsibleSectionProps) {
   return (
-    <details className="group my-4 rounded-xl border border-slate-200 bg-white p-3 shadow-xs" open={defaultOpen}>
+    <details
+      className="group my-4 rounded-xl border border-slate-300 bg-slate-100/90 p-3 shadow-sm"
+      open={defaultOpen}
+    >
       <summary className="cursor-pointer list-none">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -25,7 +28,7 @@ export default function CollapsibleSection({
           <ChevronDown className="h-4 w-4 text-slate-500 transition group-open:rotate-180" />
         </div>
       </summary>
-      <div className="mt-3 border-t border-slate-100 pt-3">{children}</div>
+      <div className="mt-3 border-t border-slate-200 pt-3">{children}</div>
     </details>
   );
 }

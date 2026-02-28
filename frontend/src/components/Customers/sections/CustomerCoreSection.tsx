@@ -136,7 +136,7 @@ export default function CustomerCoreSection({
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm backdrop-blur-sm">
+    <section className="rounded-2xl border border-slate-300/80 bg-slate-50/70 p-5 shadow-sm backdrop-blur-sm">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-zinc-900">
           {customerMode === "create" ? "New customer" : `Edit customer: ${selectedCustomerName}`}
@@ -157,7 +157,7 @@ export default function CustomerCoreSection({
         defaultOpen
       >
         {ocrInfo ? <p className="mb-3 text-xs text-slate-500">{ocrInfo}</p> : null}
-        <form onSubmit={onSubmit} className="space-y-4 py-2">
+        <form onSubmit={onSubmit} className="customer-editor-form space-y-4 py-2">
           <CustomerPhotoField
             selectedCustomerId={selectedCustomerId}
             hasPhoto={Boolean(customerForm.customer_photo_object_key)}

@@ -64,7 +64,7 @@ export default function NJLicensesSection({
   onToggleUsePrefillOnUpload,
 }: NJLicensesSectionProps) {
   return (
-    <section className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm backdrop-blur-sm">
+    <section className="rounded-2xl border border-slate-300/80 bg-slate-50/70 p-5 shadow-sm backdrop-blur-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-lg font-semibold text-zinc-900">NJ Driver Licenses</h3>
         {njMode !== "create" ? (
@@ -132,9 +132,9 @@ export default function NJLicensesSection({
 
       <CollapsibleSection title="NJ license form" subtitle="Create, edit, and renew" defaultOpen>
         {ocrInfo ? <p className="mb-3 text-xs text-slate-500">{ocrInfo}</p> : null}
-        <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-2">
-          <label className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm sm:col-span-2">
-            <span className="font-medium text-slate-700">Use OCR prefill on upload</span>
+        <form onSubmit={onSubmit} className="customer-editor-form grid gap-3 sm:grid-cols-2">
+          <label className="flex items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50/80 px-3 py-2 text-sm sm:col-span-2">
+            <span className="font-semibold text-blue-900">Apply prefill on upload</span>
             <span className="relative inline-flex items-center">
               <input
                 type="checkbox"
@@ -142,7 +142,7 @@ export default function NJLicensesSection({
                 onChange={(event) => onToggleUsePrefillOnUpload(event.target.checked)}
                 className="peer sr-only"
               />
-              <span className="h-6 w-11 rounded-full bg-slate-300 transition-colors peer-checked:bg-blue-600" />
+              <span className="h-6 w-11 rounded-full bg-slate-400 transition-colors peer-checked:bg-blue-700" />
               <span className="pointer-events-none absolute left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
             </span>
           </label>
