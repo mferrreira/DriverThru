@@ -33,16 +33,23 @@ def prefill_passport_form_from_document(
 
     warnings = list(result.warnings)
     mrz_lines = extract_td3_mrz_lines(result.text)
+    parsed = None
+
     if not mrz_lines:
         warnings.append("Could not detect two MRZ lines in OCR output.")
-    mrz_problems = validate_td3_mrz_lines(mrz_lines) if mrz_lines else []
-    warnings.extend(mrz_problems)
+    else:
+        mrz_problems = validate_td3_mrz_lines(mrz_lines)
+        warnings.extend(mrz_problems)
+        fatal_mrz_problems = [problem for problem in mrz_problems if "check digit" not in problem.lower()]
+        if fatal_mrz_problems:
+            warnings.append("Skipping passport parsing because MRZ validation failed.")
+        else:
+            if mrz_problems:
+                warnings.append("MRZ has check digit inconsistencies; attempting guarded parsing.")
+            parsed = parse_passport_mrz(mrz_lines)
 
-    parsed = parse_passport_mrz(mrz_lines) if mrz_lines else None
-    if parsed is not None and mrz_problems:
-        warnings.append("Parsed passport data using tolerant MRZ parsing.")
     if parsed is None:
-        warnings.append("Could not parse validated MRZ content.")
+        warnings.append("Could not parse passport MRZ content.")
 
     customer_form = OCRCustomerFormFields()
     passport_form = OCRPassportFormFields()

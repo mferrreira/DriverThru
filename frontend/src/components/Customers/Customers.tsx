@@ -9,6 +9,7 @@ import {
   defaultNJForm,
   defaultPassportForm,
   formatDateForForm,
+  fullName,
   normalizeDate,
   normalizeString,
 } from "./formUtils";
@@ -1233,6 +1234,7 @@ export default function Customers() {
               ) : null}
               {!loadingList
                 ? customers.map((customer) => {
+                    const displayName = fullName(customer);
                     const photoUrl = buildCustomerPhotoUrl(customer.id, customer.customer_photo_object_key);
                     const showPhoto = Boolean(photoUrl && !failedPhotoUrls[photoUrl]);
                     return (
@@ -1248,14 +1250,14 @@ export default function Customers() {
                         }}
                         role="button"
                         tabIndex={0}
-                        aria-label={`Open ${customer.first_name} ${customer.last_name}`}
+                        aria-label={`Open ${displayName}`}
                       >
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-3">
                             {showPhoto && photoUrl ? (
                               <img
                                 src={photoUrl}
-                                alt={`${customer.first_name} ${customer.last_name}`}
+                                alt={displayName}
                                 className="h-10 w-10 rounded-full border border-slate-200 object-cover"
                                 onError={() => setFailedPhotoUrls((prev) => ({ ...prev, [photoUrl]: true }))}
                               />
@@ -1265,9 +1267,7 @@ export default function Customers() {
                               </div>
                             )}
                             <div>
-                              <p className="font-medium text-slate-900">
-                                {customer.first_name} {customer.last_name}
-                              </p>
+                              <p className="font-medium text-slate-900">{displayName}</p>
                               <p className="text-xs text-slate-500">ID: {customer.id}</p>
                             </div>
                           </div>

@@ -6,6 +6,7 @@ import { apiFetch } from "../../../lib/api";
 import {
   defaultCustomerForm,
   formatDateForForm,
+  fullName,
   mapAddressForm,
   normalizeDate,
   normalizeEyeColor,
@@ -72,7 +73,10 @@ export function useCustomerCoreWithOptions(options: UseCustomerCoreOptions = {})
     if (!selectedCustomer) {
       return "";
     }
-    return `${selectedCustomer.first_name} ${selectedCustomer.last_name}`.trim();
+    return [selectedCustomer.first_name, selectedCustomer.middle_name, selectedCustomer.last_name]
+      .filter((part) => Boolean(part && part.trim()))
+      .join(" ")
+      .trim();
   }, [selectedCustomer]);
 
   const customerPhotoUrl = useMemo(() => {
@@ -93,17 +97,31 @@ export function useCustomerCoreWithOptions(options: UseCustomerCoreOptions = {})
     setListError(null);
     try {
       const query = (queryOverride ?? search).trim();
-      const suffix = query ? `?search=${encodeURIComponent(query)}` : "";
+      const suffix = "?size=100";
       const response = await apiFetch(`/customers${suffix}`);
       if (!response.ok) {
         throw new Error(`Failed to list customers: ${response.status}`);
       }
       const data = (await response.json()) as CustomerListResponse;
-      setCustomers(data.items);
-      if (!skipAutoSelect && !selectedCustomerId && data.items.length > 0) {
-        await handleSelectCustomer(data.items[0].id);
+
+      const normalizedQuery = query.toLowerCase();
+      const items = normalizedQuery
+        ? data.items.filter((item) => {
+            const normalizedName = fullName(item).toLowerCase();
+            return (
+              normalizedName.includes(normalizedQuery) ||
+              (item.email ?? "").toLowerCase().includes(normalizedQuery) ||
+              (item.phone_number ?? "").toLowerCase().includes(normalizedQuery) ||
+              (item.instagram_handle ?? "").toLowerCase().includes(normalizedQuery)
+            );
+          })
+        : data.items;
+
+      setCustomers(items);
+      if (!skipAutoSelect && !selectedCustomerId && items.length > 0) {
+        await handleSelectCustomer(items[0].id);
       }
-      if (selectedCustomerId && !data.items.some((item) => item.id === selectedCustomerId)) {
+      if (selectedCustomerId && !items.some((item) => item.id === selectedCustomerId)) {
         setSelectedCustomerId(null);
         setSelectedCustomer(null);
         setCustomerMode("create");
