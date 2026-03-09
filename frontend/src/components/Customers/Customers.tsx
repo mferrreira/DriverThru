@@ -49,6 +49,8 @@ type OCRCustomerFormPayload = Partial<{
   weight_lbs: string | null;
   height_feet: string | null;
   height_inches: string | null;
+  birth_place: string | null;
+  nationality: string | null;
 }>;
 
 type OCRPassportFormPayload = Partial<PassportForm>;
@@ -181,6 +183,8 @@ export default function Customers() {
   const [createPassportFile, setCreatePassportFile] = useState<File | null>(null);
   const [createPassportFileUrl, setCreatePassportFileUrl] = useState<string | null>(null);
   const [savingCustomerWithDocument, setSavingCustomerWithDocument] = useState(false);
+  const [pendingCustomerOcrPatch, setPendingCustomerOcrPatch] = useState<OCRCustomerFormPayload | null>(null);
+  const [pendingCustomerOcrSource, setPendingCustomerOcrSource] = useState<string | null>(null);
 
   function customerInitials(firstName: string, lastName: string): string {
     const first = firstName.trim().charAt(0);
@@ -314,6 +318,8 @@ export default function Customers() {
       if (prev) URL.revokeObjectURL(prev);
       return null;
     });
+    setPendingCustomerOcrPatch(null);
+    setPendingCustomerOcrSource(null);
     setEditorTab("customer");
   }, [selectedCustomerId]);
 
@@ -852,6 +858,39 @@ export default function Customers() {
     }));
   }
 
+  function hasCustomerPatchValues(patch: OCRCustomerFormPayload): boolean {
+    return Boolean(
+      (patch.first_name && patch.first_name.trim()) ||
+      (patch.middle_name && patch.middle_name.trim()) ||
+      (patch.last_name && patch.last_name.trim()) ||
+      (patch.date_of_birth && patch.date_of_birth.trim()) ||
+      (patch.gender && patch.gender.trim()) ||
+      (patch.nationality && patch.nationality.trim())
+    );
+  }
+
+  function queueOrApplyCustomerPatch(patch: OCRCustomerFormPayload, source: string) {
+    if (!hasCustomerPatchValues(patch)) return;
+    if (customerMode === "edit") {
+      setPendingCustomerOcrPatch(patch);
+      setPendingCustomerOcrSource(source);
+      return;
+    }
+    applyCustomerFormPatch(patch);
+  }
+
+  function applyPendingCustomerOcrPatch() {
+    if (!pendingCustomerOcrPatch) return;
+    applyCustomerFormPatch(pendingCustomerOcrPatch);
+    setPendingCustomerOcrPatch(null);
+    setPendingCustomerOcrSource(null);
+  }
+
+  function discardPendingCustomerOcrPatch() {
+    setPendingCustomerOcrPatch(null);
+    setPendingCustomerOcrSource(null);
+  }
+
   function applyPassportFormPatch(patch: OCRPassportFormPayload) {
     setPassportForm((prev) => ({
       ...prev,
@@ -945,6 +984,12 @@ export default function Customers() {
       setNjError(null);
       const data = await postOcrPrefill<OCRNjPrefillApiResponse>("/ocr/prefill/nj-license-form", file);
       setOcrInfo((prev) => ({ ...prev, nj: formatOcrMeta(data.ocr_meta) }));
+      if (data.apply_customer_fields) {
+        const customerPayload = (data as OCRNjPrefillApiResponse & Record<string, unknown>).customer_form
+          ?? ((data as Record<string, unknown>).customer_fields as OCRCustomerFormPayload | undefined)
+          ?? {};
+        queueOrApplyCustomerPatch(customerPayload, "NJ license OCR");
+      }
       const payload = (data as OCRNjPrefillApiResponse & Record<string, unknown>).nj_form
         ?? ((data as Record<string, unknown>).nj_license_fields as OCRNjFormPayload | undefined)
         ?? ((data as Record<string, unknown>).document_fields as OCRNjFormPayload | undefined)
@@ -966,7 +1011,7 @@ export default function Customers() {
         const customerPayload = (data as OCRBrazilPrefillApiResponse & Record<string, unknown>).customer_form
           ?? ((data as Record<string, unknown>).customer_fields as OCRCustomerFormPayload | undefined)
           ?? {};
-        applyCustomerFormPatch(customerPayload);
+        queueOrApplyCustomerPatch(customerPayload, "Brazil license OCR");
       }
       const payload = (data as OCRBrazilPrefillApiResponse & Record<string, unknown>).brazil_form
         ?? ((data as Record<string, unknown>).brazil_license_fields as OCRBrazilFormPayload | undefined)
@@ -975,7 +1020,7 @@ export default function Customers() {
       applyBrazilFormPatch(payload);
       const fullName = payload.full_name?.trim();
       if (fullName) {
-        applyCustomerFormPatch(splitPersonName(fullName));
+        queueOrApplyCustomerPatch(splitPersonName(fullName), "Brazil license OCR");
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not apply Brazil license OCR prefill.";
@@ -993,7 +1038,7 @@ export default function Customers() {
         const customerPayload = (data as OCRPassportPrefillApiResponse & Record<string, unknown>).customer_form
           ?? ((data as Record<string, unknown>).customer_fields as OCRCustomerFormPayload | undefined)
           ?? {};
-        applyCustomerFormPatch(customerPayload);
+        queueOrApplyCustomerPatch(customerPayload, "Passport OCR");
       }
       const passportPayload = (data as OCRPassportPrefillApiResponse & Record<string, unknown>).passport_form
         ?? ((data as Record<string, unknown>).passport_fields as OCRPassportFormPayload | undefined)
@@ -1713,6 +1758,10 @@ export default function Customers() {
                       onUploadPhoto={(file) => void uploadCustomerPhoto(file)}
                       onDeletePhoto={() => void deleteCustomerPhoto()}
                       ocrInfo={ocrInfo.customer}
+                      hasPendingOcrPatch={pendingCustomerOcrPatch !== null}
+                      pendingOcrSource={pendingCustomerOcrSource}
+                      onApplyPendingOcrPatch={applyPendingCustomerOcrPatch}
+                      onDiscardPendingOcrPatch={discardPendingCustomerOcrPatch}
                     />
                   ) : null}
 
