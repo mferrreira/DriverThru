@@ -188,7 +188,7 @@ export function normalizeEyeColor(value: string | null | undefined): string {
 }
 
 export function fullName(c: CustomerListItem): string {
-  return `${c.first_name} ${c.last_name}`.trim();
+  return [c.first_name, c.middle_name, c.last_name].filter((part) => Boolean(part && part.trim())).join(" ").trim();
 }
 
 export function mapAddressForm(addresses: CustomerAddress[], addressType: AddressType): AddressForm {

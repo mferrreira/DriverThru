@@ -1,40 +1,16 @@
 # DriverThru
 
-Internal web platform (modular monolith) for NJMVC-related licensing and document workflows.
+Internal web platform for customer, document, and license workflows (NJMVC-focused).
 
-## Implemented Features
-
-- JWT authentication using an `HttpOnly` cookie.
-- Customer CRUD.
-- Customer document CRUD:
-  - NJ Driver License (renewal + history)
-  - Brazil Driver License (renewal + history)
-  - Passport (renewal + history)
-- PDF generation from templates:
-  - `BA-208`
-  - `affidavit`
-- Form prefill from customer data + selected license/passport.
-- Generated PDF download.
-- Generated PDF listing (download without regenerating).
-- Dashboard metrics + real expiration-based pending items.
-- Notification tracking for pending items (notified/pending).
-
-## Architecture
+## Stack
 
 - Backend: FastAPI + SQLAlchemy + Alembic
 - Frontend: React + Vite + Tailwind
-- Infra: Docker Compose (Nginx, Backend, Frontend build, Postgres, MinIO)
-- Pattern: modular monolith (`auth`, `customers`, `documents`, `dashboard`, etc.)
+- Infra: Docker Compose (Nginx, Backend, Frontend build container, Postgres, MinIO)
 
-## Requirements
+## Quick Start (Docker)
 
-- Docker + Docker Compose
-- (Optional) Local Python for backend development without Docker
-- (Optional) Node.js/Bun for local frontend development
-
-## Quick Setup (Docker)
-
-1. Copy environment variables:
+1. Copy env vars:
 
 ```bash
 cp .env.example .env
@@ -48,122 +24,52 @@ docker compose up -d --build
 
 3. Access:
 
-- App: `http://localhost`
-- Backend health (via nginx): `http://localhost/api/health`
-- MinIO Console: `http://localhost:9001` (if exposed)
+- App: `http://localhost:8080`
+- API health: `http://localhost:8080/api/health`
 
-Note: the backend container runs `alembic upgrade head` on startup.
+## Important Runtime Notes
 
-## Local Setup (without Docker)
+- Backend startup in Compose runs migrations automatically:
+  - `alembic -c alembic.ini upgrade head && uvicorn ...`
+- If you run backend outside Compose (e.g. plain `docker run`), run Alembic manually.
+- OCR provider is configured by env (`OCR_PROVIDER`, `ANTHROPIC_API_KEY`, model vars if configured).
 
-### Backend
+## Project Docs
 
-```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-alembic upgrade head
-uvicorn app.main:app --reload --port 8000
-```
+- Backend details: `backend/README.md`
+- Frontend details: `frontend/README.md`
 
-### Frontend
+## Feature Highlights
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+- Auth via JWT in `HttpOnly` cookie
+- Customer CRUD with photo upload
+- Document CRUD/history:
+  - NJ Driver License
+  - Brazil Driver License
+  - Passport
+- Document file upload to MinIO (record file + staged file flows)
+- OCR prefill endpoints (customer/NJ/BR/passport)
+- PDF generation + prefill + downloads
+- Dashboard pending/summary and notification tracking
+- CSV reports endpoints
 
-## Alembic Migrations
+## Production Deploy Checklist
 
-### Inside Docker (recommended)
+1. `git pull`
+2. Update `.env` (DB/MinIO/auth/OCR keys)
+3. `docker compose up -d --build`
+4. Verify backend logs and migration output
+5. Smoke test:
+   - login
+   - customers list
+   - one OCR prefill request
+   - one document generation
 
-```bash
-docker compose exec backend alembic upgrade head
-```
+## Troubleshooting
 
-### Local host
-
-When running on host, `DATABASE_URL` must point to a locally reachable DB (`localhost`), not `db` (Docker internal hostname).
-
-## Auth Users
-
-Configured via `AUTH_USERS_JSON` in `.env` (required).
-Do not use default/demo credentials in production.
-
-### Create/Update User via CLI
-
-Use the helper script to add or rotate users with Argon2-hashed passwords:
-
-```bash
-cd backend
-python scripts/create_auth_user.py --username manager --role admin --write-env ../.env
-```
-
-If you omit `--write-env`, the script prints the `AUTH_USERS_JSON=...` value so you can use it elsewhere.
-
-## PDF Templates
-
-By default, templates are loaded from `documents/`:
-
-- `documents/BA-208.pdf`
-- `documents/affidavit.pdf`
-
-In Docker, this folder is mounted to `/app/documents` in backend.
-
-## Database Backup and Restore
-
-- Automatic backups run in `db-backup` service (default: every 24h, keep 15 files).
-- Backup files are stored in `postgres/backups/`.
-- Restore CLI:
-
-```bash
-./postgres/restore.sh --list
-./postgres/restore.sh --latest
-./postgres/restore.sh --file ./postgres/backups/driverthru_YYYY-MM-DD_HH-MM.sql
-```
-
-## Main Endpoints
-
-### Auth
-
-- `POST /api/auth/login`
-- `POST /api/auth/logout`
-- `GET /api/auth/me`
-
-### Customers
-
-- `GET /api/customers`
-- `POST /api/customers`
-- `PATCH /api/customers/{id}`
-- `DELETE /api/customers/{id}`
-- NJ/BR/passport subroutes under `/api/customers/{id}/...`
-
-### Documents
-
-- `GET /api/documents/templates`
-- `GET /api/documents/templates/{template_key}/fields`
-- `POST /api/documents/prefill`
-- `POST /api/documents/generate`
-- `GET /api/documents/download?object_key=...`
-- `GET /api/documents/generated`
-
-### Dashboard
-
-- `GET /api/dashboard/summary`
-- `GET /api/dashboard/pending`
-- `POST /api/dashboard/pending/notify`
-
-## Quick Troubleshooting
-
-- `ModuleNotFoundError: jwt` in Alembic:
-  - fixed by dashboard module import changes; update your branch and rerun.
 - `failed to resolve host 'db'` when running Alembic locally:
-  - run via Docker (`docker compose exec backend ...`) or update `DATABASE_URL` to `localhost`.
-- Constraint errors (`height_feet`, etc.):
-  - backend returns `422`; check the payload sent by frontend.
-
-## Current Status
-
-Project is under active development. OCR and UX improvements are still on the roadmap.
+  - local `DATABASE_URL` must point to `localhost` (not `db`).
+- OCR 422 on upload:
+  - check file type (`image/*` or `.pdf`) and payload not empty.
+- Missing DB column errors after deploy:
+  - migration likely not applied; check backend startup logs for Alembic.

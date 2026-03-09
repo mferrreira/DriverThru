@@ -39,6 +39,6 @@ dist-ssr
 postgres/data/
 minio/data/
 dist/
-
+tests/
 # Infra
 #documents/*.pdf

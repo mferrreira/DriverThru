@@ -9,6 +9,7 @@ import {
   defaultNJForm,
   defaultPassportForm,
   formatDateForForm,
+  fullName,
   normalizeDate,
   normalizeString,
 } from "./formUtils";
@@ -19,9 +20,11 @@ import NJLicensesSection from "./sections/NJLicensesSection";
 import PassportsSection from "./sections/PassportsSection";
 import CustomerActionsSection from "./sections/CustomerActionsSection";
 import type {
+  AddressType,
   BrazilDriverLicense,
   BrazilForm,
   CustomerForm,
+  CustomerRead,
   NJDriverLicense,
   NJEndorsement,
   NJForm,
@@ -46,6 +49,8 @@ type OCRCustomerFormPayload = Partial<{
   weight_lbs: string | null;
   height_feet: string | null;
   height_inches: string | null;
+  birth_place: string | null;
+  nationality: string | null;
 }>;
 
 type OCRPassportFormPayload = Partial<PassportForm>;
@@ -95,6 +100,7 @@ type StagedDocumentFileApiResponse = {
 };
 
 type EditorTab = "customer" | "passport" | "nj" | "br" | "actions";
+type InitialDocumentKind = "nj_driver_license" | "brazil_driver_license" | "passport";
 
 export default function Customers() {
   const navigate = useNavigate();
@@ -170,6 +176,15 @@ export default function Customers() {
   const [passportFileError, setPassportFileError] = useState<string | null>(null);
   const [passportStagedFileObjectKey, setPassportStagedFileObjectKey] = useState<string | null>(null);
   const [usePassportPrefillOnUpload, setUsePassportPrefillOnUpload] = useState(false);
+  const [createNjFile, setCreateNjFile] = useState<File | null>(null);
+  const [createNjFileUrl, setCreateNjFileUrl] = useState<string | null>(null);
+  const [createBrFile, setCreateBrFile] = useState<File | null>(null);
+  const [createBrFileUrl, setCreateBrFileUrl] = useState<string | null>(null);
+  const [createPassportFile, setCreatePassportFile] = useState<File | null>(null);
+  const [createPassportFileUrl, setCreatePassportFileUrl] = useState<string | null>(null);
+  const [savingCustomerWithDocument, setSavingCustomerWithDocument] = useState(false);
+  const [pendingCustomerOcrPatch, setPendingCustomerOcrPatch] = useState<OCRCustomerFormPayload | null>(null);
+  const [pendingCustomerOcrSource, setPendingCustomerOcrSource] = useState<string | null>(null);
 
   function customerInitials(firstName: string, lastName: string): string {
     const first = firstName.trim().charAt(0);
@@ -192,6 +207,54 @@ export default function Customers() {
   function buildStagedDocumentFileUrl(path: string, objectKey: string | null): string | null {
     if (!objectKey) return null;
     return `/api${path}?object_key=${encodeURIComponent(objectKey)}`;
+  }
+
+  function revokeObjectUrl(url: string | null) {
+    if (url) URL.revokeObjectURL(url);
+  }
+
+  function clearCreateDocumentFiles() {
+    revokeObjectUrl(createNjFileUrl);
+    revokeObjectUrl(createBrFileUrl);
+    revokeObjectUrl(createPassportFileUrl);
+    setCreateNjFile(null);
+    setCreateNjFileUrl(null);
+    setCreateBrFile(null);
+    setCreateBrFileUrl(null);
+    setCreatePassportFile(null);
+    setCreatePassportFileUrl(null);
+  }
+
+  function setCreateDocumentFile(kind: InitialDocumentKind, file: File) {
+    const objectUrl = URL.createObjectURL(file);
+    if (kind !== "nj_driver_license") {
+      revokeObjectUrl(createNjFileUrl);
+      setCreateNjFile(null);
+      setCreateNjFileUrl(null);
+    }
+    if (kind !== "brazil_driver_license") {
+      revokeObjectUrl(createBrFileUrl);
+      setCreateBrFile(null);
+      setCreateBrFileUrl(null);
+    }
+    if (kind !== "passport") {
+      revokeObjectUrl(createPassportFileUrl);
+      setCreatePassportFile(null);
+      setCreatePassportFileUrl(null);
+    }
+    if (kind === "nj_driver_license") {
+      revokeObjectUrl(createNjFileUrl);
+      setCreateNjFile(file);
+      setCreateNjFileUrl(objectUrl);
+    } else if (kind === "brazil_driver_license") {
+      revokeObjectUrl(createBrFileUrl);
+      setCreateBrFile(file);
+      setCreateBrFileUrl(objectUrl);
+    } else {
+      revokeObjectUrl(createPassportFileUrl);
+      setCreatePassportFile(file);
+      setCreatePassportFileUrl(objectUrl);
+    }
   }
 
   useEffect(() => {
@@ -240,8 +303,33 @@ export default function Customers() {
     setPassportFileError(null);
     setPassportStagedFileObjectKey(null);
     setUsePassportPrefillOnUpload(false);
+    setCreateNjFile(null);
+    setCreateNjFileUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setCreateBrFile(null);
+    setCreateBrFileUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setCreatePassportFile(null);
+    setCreatePassportFileUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setPendingCustomerOcrPatch(null);
+    setPendingCustomerOcrSource(null);
     setEditorTab("customer");
   }, [selectedCustomerId]);
+
+  useEffect(() => {
+    return () => {
+      if (createNjFileUrl) URL.revokeObjectURL(createNjFileUrl);
+      if (createBrFileUrl) URL.revokeObjectURL(createBrFileUrl);
+      if (createPassportFileUrl) URL.revokeObjectURL(createPassportFileUrl);
+    };
+  }, [createNjFileUrl, createBrFileUrl, createPassportFileUrl]);
 
   function hydrateNjForm(item: NJDriverLicense) {
     setNjForm({
@@ -770,6 +858,39 @@ export default function Customers() {
     }));
   }
 
+  function hasCustomerPatchValues(patch: OCRCustomerFormPayload): boolean {
+    return Boolean(
+      (patch.first_name && patch.first_name.trim()) ||
+      (patch.middle_name && patch.middle_name.trim()) ||
+      (patch.last_name && patch.last_name.trim()) ||
+      (patch.date_of_birth && patch.date_of_birth.trim()) ||
+      (patch.gender && patch.gender.trim()) ||
+      (patch.nationality && patch.nationality.trim())
+    );
+  }
+
+  function queueOrApplyCustomerPatch(patch: OCRCustomerFormPayload, source: string) {
+    if (!hasCustomerPatchValues(patch)) return;
+    if (customerMode === "edit") {
+      setPendingCustomerOcrPatch(patch);
+      setPendingCustomerOcrSource(source);
+      return;
+    }
+    applyCustomerFormPatch(patch);
+  }
+
+  function applyPendingCustomerOcrPatch() {
+    if (!pendingCustomerOcrPatch) return;
+    applyCustomerFormPatch(pendingCustomerOcrPatch);
+    setPendingCustomerOcrPatch(null);
+    setPendingCustomerOcrSource(null);
+  }
+
+  function discardPendingCustomerOcrPatch() {
+    setPendingCustomerOcrPatch(null);
+    setPendingCustomerOcrSource(null);
+  }
+
   function applyPassportFormPatch(patch: OCRPassportFormPayload) {
     setPassportForm((prev) => ({
       ...prev,
@@ -840,11 +961,35 @@ export default function Customers() {
     }));
   }
 
+  function splitPersonName(fullName: string): { first_name: string | null; middle_name: string | null; last_name: string | null } {
+    const parts = fullName
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    if (parts.length === 0) {
+      return { first_name: null, middle_name: null, last_name: null };
+    }
+    if (parts.length === 1) {
+      return { first_name: parts[0], middle_name: null, last_name: null };
+    }
+    return {
+      first_name: parts[0],
+      middle_name: parts.length > 2 ? parts.slice(1, -1).join(" ") : null,
+      last_name: parts[parts.length - 1],
+    };
+  }
+
   async function applyNjOcrFromFile(file: File) {
     try {
       setNjError(null);
       const data = await postOcrPrefill<OCRNjPrefillApiResponse>("/ocr/prefill/nj-license-form", file);
       setOcrInfo((prev) => ({ ...prev, nj: formatOcrMeta(data.ocr_meta) }));
+      if (data.apply_customer_fields) {
+        const customerPayload = (data as OCRNjPrefillApiResponse & Record<string, unknown>).customer_form
+          ?? ((data as Record<string, unknown>).customer_fields as OCRCustomerFormPayload | undefined)
+          ?? {};
+        queueOrApplyCustomerPatch(customerPayload, "NJ license OCR");
+      }
       const payload = (data as OCRNjPrefillApiResponse & Record<string, unknown>).nj_form
         ?? ((data as Record<string, unknown>).nj_license_fields as OCRNjFormPayload | undefined)
         ?? ((data as Record<string, unknown>).document_fields as OCRNjFormPayload | undefined)
@@ -862,11 +1007,21 @@ export default function Customers() {
       setBrError(null);
       const data = await postOcrPrefill<OCRBrazilPrefillApiResponse>("/ocr/prefill/brazil-license-form", file);
       setOcrInfo((prev) => ({ ...prev, br: formatOcrMeta(data.ocr_meta) }));
+      if (data.apply_customer_fields) {
+        const customerPayload = (data as OCRBrazilPrefillApiResponse & Record<string, unknown>).customer_form
+          ?? ((data as Record<string, unknown>).customer_fields as OCRCustomerFormPayload | undefined)
+          ?? {};
+        queueOrApplyCustomerPatch(customerPayload, "Brazil license OCR");
+      }
       const payload = (data as OCRBrazilPrefillApiResponse & Record<string, unknown>).brazil_form
         ?? ((data as Record<string, unknown>).brazil_license_fields as OCRBrazilFormPayload | undefined)
         ?? ((data as Record<string, unknown>).document_fields as OCRBrazilFormPayload | undefined)
         ?? {};
       applyBrazilFormPatch(payload);
+      const fullName = payload.full_name?.trim();
+      if (fullName) {
+        queueOrApplyCustomerPatch(splitPersonName(fullName), "Brazil license OCR");
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not apply Brazil license OCR prefill.";
       setBrError(null);
@@ -883,7 +1038,7 @@ export default function Customers() {
         const customerPayload = (data as OCRPassportPrefillApiResponse & Record<string, unknown>).customer_form
           ?? ((data as Record<string, unknown>).customer_fields as OCRCustomerFormPayload | undefined)
           ?? {};
-        applyCustomerFormPatch(customerPayload);
+        queueOrApplyCustomerPatch(customerPayload, "Passport OCR");
       }
       const passportPayload = (data as OCRPassportPrefillApiResponse & Record<string, unknown>).passport_form
         ?? ((data as Record<string, unknown>).passport_fields as OCRPassportFormPayload | undefined)
@@ -959,6 +1114,13 @@ export default function Customers() {
   }
 
   async function handleUploadNjFile(file: File) {
+    if (!selectedCustomerId && customerMode === "create") {
+      setCreateDocumentFile("nj_driver_license", file);
+      if (useNjPrefillOnUpload) {
+        await applyNjOcrFromFile(file);
+      }
+      return;
+    }
     if (!selectedCustomerId) {
       setNjFileError(null);
       alertError("Create/select a customer first.");
@@ -990,6 +1152,12 @@ export default function Customers() {
   }
 
   async function handleDeleteNjFile() {
+    if (!selectedCustomerId && customerMode === "create") {
+      revokeObjectUrl(createNjFileUrl);
+      setCreateNjFile(null);
+      setCreateNjFileUrl(null);
+      return;
+    }
     if (!selectedCustomerId) {
       setNjFileError(null);
       alertError("Select a customer first.");
@@ -1019,6 +1187,13 @@ export default function Customers() {
   }
 
   async function handleUploadBrFile(file: File) {
+    if (!selectedCustomerId && customerMode === "create") {
+      setCreateDocumentFile("brazil_driver_license", file);
+      if (useBrPrefillOnUpload) {
+        await applyBrazilOcrFromFile(file);
+      }
+      return;
+    }
     if (!selectedCustomerId) {
       setBrFileError(null);
       alertError("Create/select a customer first.");
@@ -1050,6 +1225,12 @@ export default function Customers() {
   }
 
   async function handleDeleteBrFile() {
+    if (!selectedCustomerId && customerMode === "create") {
+      revokeObjectUrl(createBrFileUrl);
+      setCreateBrFile(null);
+      setCreateBrFileUrl(null);
+      return;
+    }
     if (!selectedCustomerId) {
       setBrFileError(null);
       alertError("Select a customer first.");
@@ -1079,6 +1260,13 @@ export default function Customers() {
   }
 
   async function handleUploadPassportFile(file: File) {
+    if (!selectedCustomerId && customerMode === "create") {
+      setCreateDocumentFile("passport", file);
+      if (usePassportPrefillOnUpload) {
+        await applyPassportOcrFromFile(file);
+      }
+      return;
+    }
     if (!selectedCustomerId) {
       setPassportFileError(null);
       alertError("Create/select a customer first.");
@@ -1110,6 +1298,12 @@ export default function Customers() {
   }
 
   async function handleDeletePassportFile() {
+    if (!selectedCustomerId && customerMode === "create") {
+      revokeObjectUrl(createPassportFileUrl);
+      setCreatePassportFile(null);
+      setCreatePassportFileUrl(null);
+      return;
+    }
     if (!selectedCustomerId) {
       setPassportFileError(null);
       alertError("Select a customer first.");
@@ -1135,6 +1329,196 @@ export default function Customers() {
       alertError(message);
     } finally {
       setDeletingPassportFile(false);
+    }
+  }
+
+  function buildCustomerAddressesPayload(form: CustomerForm): Array<Record<string, string>> {
+    const output: Array<Record<string, string>> = [];
+    const entries: Array<{ type: AddressType; value: CustomerForm["residential"] }> = [
+      { type: "residential", value: form.residential },
+      { type: "mailing", value: form.mailing },
+      { type: "out_of_state", value: form.out_of_state },
+    ];
+    for (const entry of entries) {
+      const hasAnyValue =
+        entry.value.street.trim() ||
+        entry.value.apt.trim() ||
+        entry.value.city.trim() ||
+        entry.value.state.trim() ||
+        entry.value.zip_code.trim() ||
+        entry.value.county.trim();
+      if (!hasAnyValue) continue;
+      if (!entry.value.street.trim() || !entry.value.city.trim() || !entry.value.state.trim() || !entry.value.zip_code.trim()) {
+        throw new Error(`Address ${entry.type} is incomplete. Provide street/city/state/zip.`);
+      }
+      const normalizedState = entry.value.state.trim().toUpperCase();
+      if (normalizedState.length !== 2) {
+        throw new Error(`Address ${entry.type}: state must be 2 characters (e.g. NJ).`);
+      }
+      output.push({
+        address_type: entry.type,
+        street: entry.value.street.trim(),
+        apt: entry.value.apt.trim(),
+        city: entry.value.city.trim(),
+        state: normalizedState,
+        zip_code: entry.value.zip_code.trim(),
+        county: entry.value.county.trim(),
+      });
+    }
+    return output;
+  }
+
+  function buildCustomerCreatePayload() {
+    const addresses = buildCustomerAddressesPayload(customerForm);
+    const normalizedWeight = customerForm.weight_lbs.replace(",", ".");
+    const heightFeet = customerForm.height_feet ? Number(customerForm.height_feet) : null;
+    const heightInches = customerForm.height_inches ? Number(customerForm.height_inches) : null;
+    if (heightFeet !== null && (heightFeet < 0 || heightFeet > 8)) {
+      throw new Error("Height (feet) must be between 0 and 8.");
+    }
+    if (heightInches !== null && (heightInches < 0 || heightInches > 11)) {
+      throw new Error("Height (inches) must be between 0 and 11.");
+    }
+    return {
+      customer_photo_object_key: normalizeString(customerForm.customer_photo_object_key),
+      first_name: customerForm.first_name.trim(),
+      middle_name: normalizeString(customerForm.middle_name),
+      last_name: customerForm.last_name.trim(),
+      suffix: normalizeString(customerForm.suffix),
+      phone_number: normalizeString(customerForm.phone_number),
+      instagram_handle: normalizeString(customerForm.instagram_handle),
+      email: normalizeString(customerForm.email),
+      date_of_birth: normalizeDate(customerForm.date_of_birth),
+      has_left_country: customerForm.has_left_country,
+      has_no_ssn: customerForm.has_no_ssn,
+      ssn_encrypted: customerForm.has_no_ssn ? null : normalizeString(customerForm.ssn_encrypted),
+      gender: customerForm.gender || null,
+      eye_color: normalizeString(customerForm.eye_color),
+      weight_lbs: normalizeString(normalizedWeight),
+      height_feet: heightFeet,
+      height_inches: heightInches,
+      addresses,
+    };
+  }
+
+  function pendingInitialDocumentForCreate(): { kind: InitialDocumentKind; file: File } | null {
+    const options = [
+      createNjFile ? ({ kind: "nj_driver_license", file: createNjFile } as const) : null,
+      createBrFile ? ({ kind: "brazil_driver_license", file: createBrFile } as const) : null,
+      createPassportFile ? ({ kind: "passport", file: createPassportFile } as const) : null,
+    ].filter((item): item is { kind: InitialDocumentKind; file: File } => item !== null);
+    if (options.length <= 1) return options[0] ?? null;
+    throw new Error("Upload only one initial document when creating a customer.");
+  }
+
+  function buildInitialDocumentPayload(kind: InitialDocumentKind): Record<string, unknown> {
+    if (kind === "nj_driver_license") {
+      return {
+        license_number_encrypted: normalizeString(njForm.license_number_encrypted),
+        issue_date: normalizeDate(njForm.issue_date),
+        expiration_date: normalizeDate(njForm.expiration_date),
+        license_class: njForm.license_class || null,
+        endorsements: njForm.endorsements,
+        restrictions: njForm.restrictions,
+        is_current: njForm.is_current,
+      };
+    }
+    if (kind === "brazil_driver_license") {
+      return {
+        full_name: brForm.full_name.trim(),
+        identity_number: normalizeString(brForm.identity_number),
+        issuing_agency: normalizeString(brForm.issuing_agency),
+        issuing_state: normalizeString(brForm.issuing_state),
+        cpf_encrypted: normalizeString(brForm.cpf_encrypted),
+        father_name: normalizeString(brForm.father_name),
+        mother_name: normalizeString(brForm.mother_name),
+        category: normalizeString(brForm.category),
+        registry_number: normalizeString(brForm.registry_number),
+        expiration_date: normalizeDate(brForm.expiration_date),
+        first_license_date: normalizeDate(brForm.first_license_date),
+        observations: normalizeString(brForm.observations),
+        issue_place: normalizeString(brForm.issue_place),
+        issue_date: normalizeDate(brForm.issue_date),
+        paper_number: normalizeString(brForm.paper_number),
+        issue_code: normalizeString(brForm.issue_code),
+        is_current: brForm.is_current,
+      };
+    }
+    return {
+      document_type: normalizeString(passportForm.document_type),
+      issuing_country: normalizeString(passportForm.issuing_country),
+      passport_number_encrypted: passportForm.passport_number_encrypted.trim(),
+      surname: passportForm.surname.trim(),
+      given_name: passportForm.given_name.trim(),
+      middle_name: normalizeString(passportForm.middle_name),
+      father_name: normalizeString(passportForm.father_name),
+      mother_name: normalizeString(passportForm.mother_name),
+      nationality: normalizeString(passportForm.nationality),
+      birth_place: normalizeString(passportForm.birth_place),
+      issue_date: normalizeDate(passportForm.issue_date),
+      expiration_date: normalizeDate(passportForm.expiration_date),
+      issuing_authority: normalizeString(passportForm.issuing_authority),
+      is_current: passportForm.is_current,
+    };
+  }
+
+  async function submitCustomerWithInitialDocument(event: FormEvent) {
+    event.preventDefault();
+    if (customerMode !== "create") {
+      await submitCustomer(event);
+      return;
+    }
+
+    const initialDocument = pendingInitialDocumentForCreate();
+    if (!initialDocument) {
+      await submitCustomer(event);
+      return;
+    }
+
+    setSavingCustomerWithDocument(true);
+    try {
+      const customerPayload = buildCustomerCreatePayload();
+      const documentPayload = buildInitialDocumentPayload(initialDocument.kind);
+      const formData = new FormData();
+      formData.append("customer_payload", JSON.stringify(customerPayload));
+      formData.append("document_kind", initialDocument.kind);
+      formData.append("document_payload", JSON.stringify(documentPayload));
+      formData.append("file", initialDocument.file);
+
+      const response = await apiFetch("/customers/create-with-document", {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) {
+        let detail = `Failed to create customer with initial document: ${response.status}`;
+        try {
+          const body = (await response.json()) as { detail?: unknown };
+          if (typeof body.detail === "string" && body.detail.trim()) {
+            detail = body.detail;
+          } else if (Array.isArray(body.detail)) {
+            detail = body.detail
+              .map((item) => {
+                const row = item as { loc?: unknown[]; msg?: string };
+                const loc = Array.isArray(row.loc) ? row.loc.join(".") : "payload";
+                return `${loc}: ${row.msg ?? "validation error"}`;
+              })
+              .join(" | ");
+          }
+        } catch {
+          // Keep fallback message.
+        }
+        throw new Error(detail);
+      }
+
+      const saved = (await response.json()) as CustomerRead;
+      clearCreateDocumentFiles();
+      await loadCustomers();
+      await handleSelectCustomer(saved.id);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Could not create customer with initial document.";
+      alertError(message);
+    } finally {
+      setSavingCustomerWithDocument(false);
     }
   }
 
@@ -1233,6 +1617,7 @@ export default function Customers() {
               ) : null}
               {!loadingList
                 ? customers.map((customer) => {
+                    const displayName = fullName(customer);
                     const photoUrl = buildCustomerPhotoUrl(customer.id, customer.customer_photo_object_key);
                     const showPhoto = Boolean(photoUrl && !failedPhotoUrls[photoUrl]);
                     return (
@@ -1248,14 +1633,14 @@ export default function Customers() {
                         }}
                         role="button"
                         tabIndex={0}
-                        aria-label={`Open ${customer.first_name} ${customer.last_name}`}
+                        aria-label={`Open ${displayName}`}
                       >
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-3">
                             {showPhoto && photoUrl ? (
                               <img
                                 src={photoUrl}
-                                alt={`${customer.first_name} ${customer.last_name}`}
+                                alt={displayName}
                                 className="h-10 w-10 rounded-full border border-slate-200 object-cover"
                                 onError={() => setFailedPhotoUrls((prev) => ({ ...prev, [photoUrl]: true }))}
                               />
@@ -1265,9 +1650,7 @@ export default function Customers() {
                               </div>
                             )}
                             <div>
-                              <p className="font-medium text-slate-900">
-                                {customer.first_name} {customer.last_name}
-                              </p>
+                              <p className="font-medium text-slate-900">{displayName}</p>
                               <p className="text-xs text-slate-500">ID: {customer.id}</p>
                             </div>
                           </div>
@@ -1365,16 +1748,20 @@ export default function Customers() {
                       setCustomerForm={setCustomerForm}
                       customerError={customerError}
                       customerSuccess={customerSuccess}
-                      savingCustomer={savingCustomer}
+                      savingCustomer={savingCustomer || savingCustomerWithDocument}
                       customerPhotoUrl={customerPhotoUrl}
                       uploadingPhoto={uploadingPhoto}
                       deletingPhoto={deletingPhoto}
                       photoError={photoError}
-                      onSubmit={(event) => void submitCustomer(event)}
+                      onSubmit={(event) => void submitCustomerWithInitialDocument(event)}
                       onDeactivate={(customerId) => void deactivateCustomer(customerId)}
                       onUploadPhoto={(file) => void uploadCustomerPhoto(file)}
                       onDeletePhoto={() => void deleteCustomerPhoto()}
                       ocrInfo={ocrInfo.customer}
+                      hasPendingOcrPatch={pendingCustomerOcrPatch !== null}
+                      pendingOcrSource={pendingCustomerOcrSource}
+                      onApplyPendingOcrPatch={applyPendingCustomerOcrPatch}
+                      onDiscardPendingOcrPatch={discardPendingCustomerOcrPatch}
                     />
                   ) : null}
 
@@ -1397,7 +1784,13 @@ export default function Customers() {
                       onToggleRestriction={toggleNjRestriction}
                       ocrInfo={ocrInfo.nj}
                       fileRecordId={njMode === "edit" ? editingNjId : null}
-                      fileObjectKey={njMode === "edit" ? currentNjRecord?.document_file_object_key ?? null : njStagedFileObjectKey}
+                      fileObjectKey={
+                        njMode === "edit"
+                          ? currentNjRecord?.document_file_object_key ?? null
+                          : selectedCustomerId
+                            ? njStagedFileObjectKey
+                            : createNjFile?.name ?? null
+                      }
                       fileUrl={
                         njMode === "edit"
                           ? currentNjFileUrl
@@ -1406,7 +1799,7 @@ export default function Customers() {
                                 `/customers/${selectedCustomerId}/nj-driver-licenses/staged-file`,
                                 njStagedFileObjectKey,
                               )
-                            : null
+                            : createNjFileUrl
                       }
                       uploadingFile={uploadingNjFile}
                       deletingFile={deletingNjFile}
@@ -1415,6 +1808,7 @@ export default function Customers() {
                       onDeleteFile={() => void handleDeleteNjFile()}
                       usePrefillOnUpload={useNjPrefillOnUpload}
                       onToggleUsePrefillOnUpload={setUseNjPrefillOnUpload}
+                      canUploadFile={selectedCustomerId !== null || customerMode === "create"}
                     />
                   ) : null}
 
@@ -1435,7 +1829,13 @@ export default function Customers() {
                       onStartCreate={startCreateBrazil}
                       ocrInfo={ocrInfo.br}
                       fileRecordId={brMode === "edit" ? editingBrId : null}
-                      fileObjectKey={brMode === "edit" ? currentBrRecord?.document_file_object_key ?? null : brStagedFileObjectKey}
+                      fileObjectKey={
+                        brMode === "edit"
+                          ? currentBrRecord?.document_file_object_key ?? null
+                          : selectedCustomerId
+                            ? brStagedFileObjectKey
+                            : createBrFile?.name ?? null
+                      }
                       fileUrl={
                         brMode === "edit"
                           ? currentBrFileUrl
@@ -1444,7 +1844,7 @@ export default function Customers() {
                                 `/customers/${selectedCustomerId}/brazil-driver-licenses/staged-file`,
                                 brStagedFileObjectKey,
                               )
-                            : null
+                            : createBrFileUrl
                       }
                       uploadingFile={uploadingBrFile}
                       deletingFile={deletingBrFile}
@@ -1453,6 +1853,7 @@ export default function Customers() {
                       onDeleteFile={() => void handleDeleteBrFile()}
                       usePrefillOnUpload={useBrPrefillOnUpload}
                       onToggleUsePrefillOnUpload={setUseBrPrefillOnUpload}
+                      canUploadFile={selectedCustomerId !== null || customerMode === "create"}
                     />
                   ) : null}
 
@@ -1474,7 +1875,11 @@ export default function Customers() {
                       ocrInfo={ocrInfo.passport}
                       fileRecordId={passportMode === "edit" ? editingPassportId : null}
                       fileObjectKey={
-                        passportMode === "edit" ? currentPassportRecord?.document_file_object_key ?? null : passportStagedFileObjectKey
+                        passportMode === "edit"
+                          ? currentPassportRecord?.document_file_object_key ?? null
+                          : selectedCustomerId
+                            ? passportStagedFileObjectKey
+                            : createPassportFile?.name ?? null
                       }
                       fileUrl={
                         passportMode === "edit"
@@ -1484,7 +1889,7 @@ export default function Customers() {
                                 `/customers/${selectedCustomerId}/passports/staged-file`,
                                 passportStagedFileObjectKey,
                               )
-                            : null
+                            : createPassportFileUrl
                       }
                       uploadingFile={uploadingPassportFile}
                       deletingFile={deletingPassportFile}
@@ -1493,6 +1898,7 @@ export default function Customers() {
                       onDeleteFile={() => void handleDeletePassportFile()}
                       usePrefillOnUpload={usePassportPrefillOnUpload}
                       onToggleUsePrefillOnUpload={setUsePassportPrefillOnUpload}
+                      canUploadFile={selectedCustomerId !== null || customerMode === "create"}
                     />
                   ) : null}
 

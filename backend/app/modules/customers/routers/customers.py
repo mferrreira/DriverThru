@@ -1,13 +1,23 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
 from fastapi.responses import StreamingResponse
+from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
-from app.modules.customers.schemas import CustomerCreate, CustomerListResponse, CustomerRead, CustomerUpdate
+from app.modules.customers.schemas import (
+    BrazilDriverLicenseCreate,
+    CustomerCreate,
+    CustomerListResponse,
+    CustomerRead,
+    NJDriverLicenseCreate,
+    PassportCreate,
+    CustomerUpdate,
+)
 from app.modules.customers.services import (
+    create_customer_with_initial_document,
     create_customer,
     delete_customer_photo,
     deactivate_customer,
@@ -17,6 +27,7 @@ from app.modules.customers.services import (
     upload_customer_photo,
     update_customer,
 )
+from app.modules.customers.services.create_customer_with_initial_document_use_case import InitialDocumentKind
 
 from .helpers import raise_customer_integrity_error, raise_not_found
 
@@ -45,6 +56,50 @@ def get_customer_route(customer_id: int, db: Session = Depends(get_db)) -> Custo
 def create_customer_route(payload: CustomerCreate, db: Session = Depends(get_db)) -> CustomerRead:
     try:
         return create_customer(db=db, payload=payload)
+    except IntegrityError as exc:
+        raise_customer_integrity_error(db, exc)
+
+
+@router.post("/create-with-document", response_model=CustomerRead, status_code=status.HTTP_201_CREATED)
+async def create_customer_with_document_route(
+    customer_payload: str = Form(...),
+    document_kind: str = Form(...),
+    document_payload: str = Form(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+) -> CustomerRead:
+    try:
+        customer_data = CustomerCreate.model_validate_json(customer_payload)
+        normalized_kind = document_kind.strip().lower()
+        if normalized_kind == "nj_driver_license":
+            kind_value: InitialDocumentKind = "nj_driver_license"
+            parsed_document_payload = NJDriverLicenseCreate.model_validate_json(document_payload)
+        elif normalized_kind == "brazil_driver_license":
+            kind_value = "brazil_driver_license"
+            parsed_document_payload = BrazilDriverLicenseCreate.model_validate_json(document_payload)
+        elif normalized_kind == "passport":
+            kind_value = "passport"
+            parsed_document_payload = PassportCreate.model_validate_json(document_payload)
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Invalid document_kind. Use 'nj_driver_license', 'brazil_driver_license' or 'passport'.",
+            )
+
+        payload = await file.read()
+        return create_customer_with_initial_document(
+            db=db,
+            customer_payload=customer_data,
+            document_kind=kind_value,
+            document_payload=parsed_document_payload,
+            file_payload=payload,
+            file_name=file.filename,
+            content_type=file.content_type,
+        )
+    except ValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.errors()) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     except IntegrityError as exc:
         raise_customer_integrity_error(db, exc)
 

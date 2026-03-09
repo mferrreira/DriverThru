@@ -86,6 +86,10 @@ type CustomerCoreSectionProps = {
   onUploadPhoto: (file: File) => void;
   onDeletePhoto: () => void;
   ocrInfo?: string | null;
+  hasPendingOcrPatch?: boolean;
+  pendingOcrSource?: string | null;
+  onApplyPendingOcrPatch?: () => void;
+  onDiscardPendingOcrPatch?: () => void;
 };
 
 export default function CustomerCoreSection({
@@ -106,6 +110,10 @@ export default function CustomerCoreSection({
   onUploadPhoto,
   onDeletePhoto,
   ocrInfo,
+  hasPendingOcrPatch,
+  pendingOcrSource,
+  onApplyPendingOcrPatch,
+  onDiscardPendingOcrPatch,
 }: CustomerCoreSectionProps) {
   const [showMetricConverter, setShowMetricConverter] = useState(false);
   const [metricWeightKg, setMetricWeightKg] = useState("");
@@ -157,6 +165,29 @@ export default function CustomerCoreSection({
         defaultOpen
       >
         {ocrInfo ? <p className="mb-3 text-xs text-slate-500">{ocrInfo}</p> : null}
+        {hasPendingOcrPatch ? (
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            <p>
+              OCR found customer-field changes from {pendingOcrSource ?? "document OCR"}. Apply manually to avoid unintended overwrite.
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onApplyPendingOcrPatch}
+                className="rounded-md border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold hover:bg-amber-100"
+              >
+                Apply OCR fields
+              </button>
+              <button
+                type="button"
+                onClick={onDiscardPendingOcrPatch}
+                className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold hover:bg-zinc-100"
+              >
+                Discard
+              </button>
+            </div>
+          </div>
+        ) : null}
         <form onSubmit={onSubmit} className="customer-editor-form space-y-4 py-2">
           <CustomerPhotoField
             selectedCustomerId={selectedCustomerId}

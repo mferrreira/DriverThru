@@ -16,6 +16,7 @@ from app.modules.ocr.services.passport_mrz_parser import (
     parse_passport_mrz,
     validate_td3_mrz_lines,
 )
+from app.modules.ocr.services.prefill_customer_form_from_document_use_case import prefill_customer_form_from_document
 from app.modules.ocr.services.prompts import extract_passport_mrz_only_prompt
 
 
@@ -33,16 +34,23 @@ def prefill_passport_form_from_document(
 
     warnings = list(result.warnings)
     mrz_lines = extract_td3_mrz_lines(result.text)
+    parsed = None
+
     if not mrz_lines:
         warnings.append("Could not detect two MRZ lines in OCR output.")
-    mrz_problems = validate_td3_mrz_lines(mrz_lines) if mrz_lines else []
-    warnings.extend(mrz_problems)
+    else:
+        mrz_problems = validate_td3_mrz_lines(mrz_lines)
+        warnings.extend(mrz_problems)
+        fatal_mrz_problems = [problem for problem in mrz_problems if "check digit" not in problem.lower()]
+        if fatal_mrz_problems:
+            warnings.append("Skipping passport parsing because MRZ validation failed.")
+        else:
+            if mrz_problems:
+                warnings.append("MRZ has check digit inconsistencies; attempting guarded parsing.")
+            parsed = parse_passport_mrz(mrz_lines)
 
-    parsed = parse_passport_mrz(mrz_lines) if mrz_lines else None
-    if parsed is not None and mrz_problems:
-        warnings.append("Parsed passport data using tolerant MRZ parsing.")
     if parsed is None:
-        warnings.append("Could not parse validated MRZ content.")
+        warnings.append("Could not parse passport MRZ content.")
 
     customer_form = OCRCustomerFormFields()
     passport_form = OCRPassportFormFields()
@@ -70,6 +78,33 @@ def prefill_passport_form_from_document(
             issuing_authority=None,
             is_current=_is_current(parsed.expiration_date),
         )
+    else:
+        generic = prefill_customer_form_from_document(provider=provider, payload=payload, content_type=content_type)
+        if _generic_passport_fallback_has_data(generic.customer_fields, generic.document_fields):
+            warnings.append("Used generic OCR fallback because passport MRZ extraction failed.")
+            warnings.extend([item for item in generic.warnings if item not in warnings])
+            customer_form = OCRCustomerFormFields(
+                first_name=generic.customer_fields.first_name,
+                middle_name=generic.customer_fields.middle_name,
+                last_name=generic.customer_fields.last_name,
+                date_of_birth=generic.customer_fields.date_of_birth,
+                gender=generic.customer_fields.gender,
+                nationality=generic.customer_fields.nationality,
+            )
+            passport_form = OCRPassportFormFields(
+                passport_number_encrypted=generic.document_fields.passport_number_encrypted
+                or generic.document_fields.document_number,
+                document_type=None,
+                issuing_country=generic.document_fields.issuing_country,
+                surname=generic.customer_fields.last_name,
+                given_name=generic.customer_fields.first_name,
+                middle_name=generic.customer_fields.middle_name,
+                nationality=generic.customer_fields.nationality,
+                issue_date=generic.document_fields.issue_date,
+                expiration_date=generic.document_fields.expiration_date,
+                issuing_authority=generic.document_fields.issuing_authority,
+                is_current=_is_current(generic.document_fields.expiration_date),
+            )
 
     return OCRPassportFormPrefillResponse(
         provider=provider.name,
@@ -112,3 +147,20 @@ def _is_current(expiration_date: str | None) -> bool | None:
     except ValueError:
         return None
     return expiry >= date.today()
+
+
+def _generic_passport_fallback_has_data(
+    customer_form: OCRCustomerFormFields,
+    document_form: OCRPassportFormFields | object,
+) -> bool:
+    document_number = getattr(document_form, "passport_number_encrypted", None) or getattr(document_form, "document_number", None)
+    return any(
+        [
+            customer_form.first_name,
+            customer_form.last_name,
+            customer_form.date_of_birth,
+            customer_form.nationality,
+            document_number,
+            getattr(document_form, "expiration_date", None),
+        ]
+    )

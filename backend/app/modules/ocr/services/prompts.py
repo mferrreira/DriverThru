@@ -30,10 +30,13 @@ def extract_passport_mrz_only_prompt() -> str:
 def prefill_brazil_license_form_json_prompt() -> str:
     return (
         "Analyze this Brazilian CNH (driver license) image/PDF and return ONLY valid JSON (no markdown). "
-        "Extract CNH fields for frontend form prefill. Do not return customer fields. "
+        "Extract CNH fields for frontend form prefill and include customer fields when visible. "
         "Use this exact shape: "
-        '{"brazil_form":{"full_name":null,"identity_number":null,"issuing_agency":null,"issuing_state":null,"cpf_encrypted":null,"father_name":null,"mother_name":null,"category":null,"registry_number":null,"expiration_date":null,"first_license_date":null,"observations":null,"issue_place":null,"issue_date":null,"paper_number":null,"issue_code":null,"is_current":null},'
+        '{"apply_customer_fields":false,'
+        '"customer_form":{"first_name":null,"middle_name":null,"last_name":null,"suffix":null,"date_of_birth":null,"gender":null,"eye_color":null,"nationality":null,"birth_place":null},'
+        '"brazil_form":{"full_name":null,"identity_number":null,"issuing_agency":null,"issuing_state":null,"cpf_encrypted":null,"father_name":null,"mother_name":null,"category":null,"registry_number":null,"expiration_date":null,"first_license_date":null,"observations":null,"issue_place":null,"issue_date":null,"paper_number":null,"issue_code":null,"is_current":null},'
         '"confidence":null,"warnings":[]}'
+        " Set apply_customer_fields=true when any customer_form field is present."
         " Prefer YYYY-MM-DD for dates when possible."
     )
 
@@ -41,9 +44,12 @@ def prefill_brazil_license_form_json_prompt() -> str:
 def prefill_nj_license_form_json_prompt() -> str:
     return (
         "Analyze this New Jersey driver license image/PDF and return ONLY valid JSON (no markdown). "
-        "Extract NJ license fields for frontend form prefill. Do not return customer fields. "
+        "Extract NJ license fields for frontend form prefill and include customer fields when visible. "
         "Use this exact shape: "
-        '{"nj_form":{"license_number_encrypted":null,"issue_date":null,"expiration_date":null,"license_class":null,"endorsements":[],"restrictions":[],"is_current":null},'
+        '{"apply_customer_fields":false,'
+        '"customer_form":{"first_name":null,"middle_name":null,"last_name":null,"suffix":null,"date_of_birth":null,"gender":null,"eye_color":null,"nationality":null,"birth_place":null},'
+        '"nj_form":{"license_number_encrypted":null,"issue_date":null,"expiration_date":null,"license_class":null,"endorsements":[],"restrictions":[],"is_current":null},'
         '"confidence":null,"warnings":[]}'
+        " Set apply_customer_fields=true when any customer_form field is present."
         " Prefer YYYY-MM-DD for dates when possible."
     )
