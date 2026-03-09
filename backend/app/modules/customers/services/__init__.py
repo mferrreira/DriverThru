@@ -8,6 +8,7 @@ from .brazil_licenses import (
     update_brazil_license,
 )
 from .customers import create_customer, deactivate_customer, get_customer_or_404, list_customers, update_customer
+from .create_customer_with_initial_document_use_case import create_customer_with_initial_document
 from .nj_licenses import (
     create_nj_license,
     delete_nj_license,
@@ -31,6 +32,7 @@ from .photos import delete_customer_photo, get_customer_photo, upload_customer_p
 __all__ = [
     "create_brazil_license",
     "create_customer",
+    "create_customer_with_initial_document",
     "create_nj_license",
     "create_passport",
     "delete_brazil_license",

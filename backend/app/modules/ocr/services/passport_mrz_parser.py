@@ -40,6 +40,7 @@ def extract_td3_mrz_lines(raw_text: str) -> list[str]:
         if first.startswith("P<"):
             repaired_line1 = _repair_td3_line1_if_truncated(first)
             repaired_line2 = _repair_td3_line2_if_missing_passport_check_digit(second)
+            repaired_line2 = _repair_td3_line2_if_overlong_by_one(repaired_line2)
             repaired_line2 = _repair_td3_line2_if_truncated_optional_zone(repaired_line2)
             return [repaired_line1, repaired_line2]
 
@@ -341,6 +342,33 @@ def _repair_td3_line2_if_truncated_optional_zone(line2: str) -> str:
     if not fixed_segment_ok:
         return line2
     return line2.ljust(44, "<")
+
+
+def _repair_td3_line2_if_overlong_by_one(line2: str) -> str:
+    if len(line2) != 45:
+        return line2
+    if not re.fullmatch(r"[A-Z0-9<]{45}", line2):
+        return line2
+    fixed_segment_ok = bool(re.fullmatch(r"[A-Z0-9<]{9}[0-9<][A-Z]{3}[0-9]{6}[0-9<][MFX<][0-9]{6}[0-9<]", line2[:28]))
+    if not fixed_segment_ok:
+        return line2
+
+    candidates: list[str] = []
+    if line2[-1] == "<":
+        candidates.append(line2[:-1])
+    if line2[-3] == "<":
+        candidates.append(f"{line2[:-3]}{line2[-2:]}")
+    candidates.append(f"{line2[:-2]}{line2[-1:]}")
+
+    for candidate in candidates:
+        if (
+            len(candidate) == 44
+            and _check_digit_ok(candidate[0:9], candidate[9])
+            and _check_digit_ok(candidate[13:19], candidate[19])
+            and _check_digit_ok(candidate[21:27], candidate[27])
+        ):
+            return candidate
+    return line2
 
 
 def _has_fatal_td3_problems(problems: list[str]) -> bool:

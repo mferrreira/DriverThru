@@ -33,6 +33,7 @@ type NJLicensesSectionProps = {
   onDeleteFile: () => void;
   usePrefillOnUpload: boolean;
   onToggleUsePrefillOnUpload: (checked: boolean) => void;
+  canUploadFile?: boolean;
 };
 
 export default function NJLicensesSection({
@@ -62,6 +63,7 @@ export default function NJLicensesSection({
   onDeleteFile,
   usePrefillOnUpload,
   onToggleUsePrefillOnUpload,
+  canUploadFile,
 }: NJLicensesSectionProps) {
   return (
     <section className="rounded-2xl border border-slate-300/80 bg-slate-50/70 p-5 shadow-sm backdrop-blur-sm">
@@ -150,7 +152,7 @@ export default function NJLicensesSection({
             title="NJ license file"
             recordLabel="NJ license"
             recordId={fileRecordId}
-            canUpload={selectedCustomerId !== null}
+            canUpload={canUploadFile ?? selectedCustomerId !== null}
             noUploadHint="Create/select a customer first. File can be uploaded before saving the NJ license."
             fileObjectKey={fileObjectKey}
             fileUrl={fileUrl}

@@ -30,6 +30,7 @@ type PassportsSectionProps = {
   onDeleteFile: () => void;
   usePrefillOnUpload: boolean;
   onToggleUsePrefillOnUpload: (checked: boolean) => void;
+  canUploadFile?: boolean;
 };
 
 export default function PassportsSection({
@@ -57,6 +58,7 @@ export default function PassportsSection({
   onDeleteFile,
   usePrefillOnUpload,
   onToggleUsePrefillOnUpload,
+  canUploadFile,
 }: PassportsSectionProps) {
   return (
     <section className="rounded-2xl border border-slate-300/80 bg-slate-50/70 p-5 shadow-sm backdrop-blur-sm">
@@ -144,7 +146,7 @@ export default function PassportsSection({
             title="Passport file"
             recordLabel="passport"
             recordId={fileRecordId}
-            canUpload={selectedCustomerId !== null}
+            canUpload={canUploadFile ?? selectedCustomerId !== null}
             noUploadHint="Create/select a customer first. File can be uploaded before saving the passport."
             fileObjectKey={fileObjectKey}
             fileUrl={fileUrl}

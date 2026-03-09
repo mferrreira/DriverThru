@@ -69,10 +69,12 @@ def create_customer(db: Session, payload: CustomerCreate) -> Customer:
         customer.nj_driver_licenses.append(_build_nj_license_from_create(nj_data))
 
     for br_data in payload.brazil_driver_licenses:
-        customer.brazil_driver_licenses.append(BrazilDriverLicense(**br_data.model_dump()))
+        customer.brazil_driver_licenses.append(
+            BrazilDriverLicense(**br_data.model_dump(exclude={"staged_document_file_object_key"}))
+        )
 
     for passport_data in payload.passports:
-        customer.passports.append(Passport(**passport_data.model_dump()))
+        customer.passports.append(Passport(**passport_data.model_dump(exclude={"staged_document_file_object_key"})))
 
     db.add(customer)
     db.commit()
@@ -103,7 +105,7 @@ def deactivate_customer(db: Session, customer_id: int) -> None:
 def _build_nj_license_from_create(payload: NJDriverLicenseCreate) -> NJDriverLicense:
     from app.modules.customers.models import NJDriverLicenseEndorsement, NJDriverLicenseRestriction
 
-    nj_payload = payload.model_dump(exclude={"endorsements", "restrictions"})
+    nj_payload = payload.model_dump(exclude={"endorsements", "restrictions", "staged_document_file_object_key"})
     nj_license = NJDriverLicense(**nj_payload)
     endorsement_codes = list(dict.fromkeys(payload.endorsements))
     restriction_codes = list(dict.fromkeys(payload.restrictions))

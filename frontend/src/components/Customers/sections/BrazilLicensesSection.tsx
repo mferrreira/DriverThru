@@ -31,6 +31,7 @@ type BrazilLicensesSectionProps = {
   onDeleteFile: () => void;
   usePrefillOnUpload: boolean;
   onToggleUsePrefillOnUpload: (checked: boolean) => void;
+  canUploadFile?: boolean;
 };
 
 export default function BrazilLicensesSection({
@@ -58,6 +59,7 @@ export default function BrazilLicensesSection({
   onDeleteFile,
   usePrefillOnUpload,
   onToggleUsePrefillOnUpload,
+  canUploadFile,
 }: BrazilLicensesSectionProps) {
   return (
     <section className="rounded-2xl border border-slate-300/80 bg-slate-50/70 p-5 shadow-sm backdrop-blur-sm">
@@ -147,7 +149,7 @@ export default function BrazilLicensesSection({
             title="Brazil license file"
             recordLabel="Brazil license"
             recordId={fileRecordId}
-            canUpload={selectedCustomerId !== null}
+            canUpload={canUploadFile ?? selectedCustomerId !== null}
             noUploadHint="Create/select a customer first. File can be uploaded before saving the Brazil license."
             fileObjectKey={fileObjectKey}
             fileUrl={fileUrl}
